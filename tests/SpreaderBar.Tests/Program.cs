@@ -357,24 +357,24 @@ namespace SpreaderBar.Tests
         {
             // Round leg 4 cm radius, off the bone axis by 1 cm: centre found, radius 4 cm.
             var leg = Tube(0.01f, 0f, 0.04f, 0.04f, 0f, 0.3f);
-            var fit = LegGirth.Measure(leg, new Vector3(0, 0.15f, 0), Vector3.UnitY, 0.012f, 0.09f);
+            var fit = LimbGirth.Measure(leg, new Vector3(0, 0.15f, 0), Vector3.UnitY, 0.012f, 0.09f);
             Check(fit.Ok && Near(fit.Radius, 0.04f, 0.001f) && Near(fit.Center, new Vector3(0.01f, 0.15f, 0), 0.002f),
                   "girth: round leg radius and centre (" + fit.Radius.ToString("0.0000") + ")");
 
             // Oval (boot) 5 x 3.5 cm: the cuff must clear the long side.
-            var oval = LegGirth.Measure(Tube(0, 0, 0.05f, 0.035f, 0f, 0.3f), new Vector3(0, 0.15f, 0), Vector3.UnitY, 0.012f, 0.09f);
+            var oval = LimbGirth.Measure(Tube(0, 0, 0.05f, 0.035f, 0f, 0.3f), new Vector3(0, 0.15f, 0), Vector3.UnitY, 0.012f, 0.09f);
             Check(oval.Ok && Near(oval.Radius, 0.05f, 0.001f), "girth: oval leg uses its longest radius");
 
             // The other leg 20 cm away and a floor far below are ignored.
             var both = Tube(0f, 0f, 0.04f, 0.04f, 0f, 0.3f);
             both.AddRange(Tube(0.2f, 0f, 0.04f, 0.04f, 0f, 0.3f));
-            var one = LegGirth.Measure(both, new Vector3(0, 0.15f, 0), Vector3.UnitY, 0.012f, 0.09f);
+            var one = LimbGirth.Measure(both, new Vector3(0, 0.15f, 0), Vector3.UnitY, 0.012f, 0.09f);
             Check(one.Ok && Near(one.Radius, 0.04f, 0.001f), "girth: the other leg is not counted");
 
             // A tilted shin: slice across the shin, not horizontal.
             var tilt = Quaternion.CreateFromAxisAngle(Vector3.UnitZ, 0.5f);
             var tilted = Tube(0, 0, 0.04f, 0.04f, -0.15f, 0.15f).ConvertAll(v => Vector3.Transform(v, tilt));
-            var t = LegGirth.Measure(tilted, Vector3.Zero, Vector3.Transform(Vector3.UnitY, tilt), 0.012f, 0.09f);
+            var t = LimbGirth.Measure(tilted, Vector3.Zero, Vector3.Transform(Vector3.UnitY, tilt), 0.012f, 0.09f);
             Check(t.Ok && Near(t.Radius, 0.04f, 0.0015f), "girth: tilted shin is sliced across it");
 
             // Sparse mesh (rings 3 cm apart, 12 sides): cutting the triangles still gives the outline at any height.
@@ -392,35 +392,35 @@ namespace SpreaderBar.Tests
                     tris.AddRange(new[] { a0, b0, a1, a1, b0, b1 });
                 }
             var cut = new List<Vector3>();
-            LegGirth.Slice(verts, tris, new Vector3(0, 0.055f, 0), Vector3.UnitY, 0.15f, cut);
-            var sliced = LegGirth.Measure(cut, new Vector3(0, 0.055f, 0), Vector3.UnitY, 0.002f, 0.09f);
+            LimbGirth.Slice(verts, tris, new Vector3(0, 0.055f, 0), Vector3.UnitY, 0.15f, cut);
+            var sliced = LimbGirth.Measure(cut, new Vector3(0, 0.055f, 0), Vector3.UnitY, 0.002f, 0.09f);
             Check(sliced.Ok && sliced.Radius > 0.038f && sliced.Radius <= 0.0401f && cut.TrueForAll(q => Math.Abs(q.Y - 0.055f) < 1e-5f),
                   "girth: triangles cut between vertex rings give the outline (" + cut.Count + " pts, r " + sliced.Radius.ToString("0.0000") + ")");
 
             // Oval leg 3.0 (towards the bar) x 2.4 cm, centred 1 cm off: extents in the cuff's frame, oval scale.
             var ovalRing = Tube(0.01f, 0f, 0.030f, 0.024f, 0.149f, 0.151f);
-            var (oc, hx, hz) = LegGirth.Extents(ovalRing, new Vector3(0, 0.15f, 0), Vector3.UnitY, new Vector3(1, 0.3f, 0));
+            var (oc, hx, hz) = LimbGirth.Extents(ovalRing, new Vector3(0, 0.15f, 0), Vector3.UnitY, new Vector3(1, 0.3f, 0));
             Check(Near(hx, 0.030f, 0.0005f) && Near(hz, 0.024f, 0.0005f) && Near(oc, new Vector3(0.01f, 0.15f, 0), 0.002f),
                   "girth: oval extents in the cuff frame (" + hx.ToString("0.0000") + " x " + hz.ToString("0.0000") + ")");
-            var (_, hx90, hz90) = LegGirth.Extents(ovalRing, new Vector3(0, 0.15f, 0), Vector3.UnitY, Vector3.UnitZ);
+            var (_, hx90, hz90) = LimbGirth.Extents(ovalRing, new Vector3(0, 0.15f, 0), Vector3.UnitY, Vector3.UnitZ);
             Check(Near(hx90, 0.024f, 0.0005f) && Near(hz90, 0.030f, 0.0005f), "girth: extents follow the bar direction");
-            var os = LegGirth.OvalScale(0.030f, 0.024f, 0.004f, 0.0334f, 0.3f, 2.5f, 1.3f);
+            var os = LimbGirth.OvalScale(0.030f, 0.024f, 0.004f, 0.0334f, 0.3f, 2.5f, 1.3f);
             Check(Near(os.X, 0.034f / 0.0334f) && Near(os.Z, 0.028f / 0.0334f) && Near(os.Y, (os.X + os.Z) / 2f), "girth: oval scale per axis");
-            var capped = LegGirth.OvalScale(0.040f, 0.020f, 0f, 0.04f, 0.3f, 2.5f, 1.3f);
+            var capped = LimbGirth.OvalScale(0.040f, 0.020f, 0f, 0.04f, 0.3f, 2.5f, 1.3f);
             Check(Near(capped.X, 1f) && Near(capped.Z, 1f / 1.3f), "girth: oval limited to MaxOval (narrow side widened)");
 
             // Extra geometry 6-8 cm off the leg in the same slice (the foot): ignored, centre and radius unchanged.
             var withFoot = Tube(0.01f, 0f, 0.03f, 0.03f, 0.14f, 0.16f);
             for (int k = 0; k < 60; k++) withFoot.Add(new Vector3(0.01f + 0.06f + k * 0.0003f, 0.15f, 0.02f));
-            var wf = LegGirth.Measure(withFoot, new Vector3(0, 0.15f, 0), Vector3.UnitY, 0.012f, 0.09f);
+            var wf = LimbGirth.Measure(withFoot, new Vector3(0, 0.15f, 0), Vector3.UnitY, 0.012f, 0.09f);
             Check(wf.Ok && Near(wf.Radius, 0.03f, 0.001f) && Near(wf.Center, new Vector3(0.01f, 0.15f, 0), 0.002f) && wf.Outline.Count < withFoot.Count,
                   "girth: other geometry in the slice (foot) is dropped (r " + wf.Radius.ToString("0.0000") + ")");
 
-            var none = LegGirth.Measure(new List<Vector3>(), Vector3.Zero, Vector3.UnitY, 0.012f, 0.09f);
+            var none = LimbGirth.Measure(new List<Vector3>(), Vector3.Zero, Vector3.UnitY, 0.012f, 0.09f);
             Check(!none.Ok, "girth: no vertices -> no fit (cuff keeps its scale)");
 
-            Check(Near(LegGirth.CuffScale(0.04f, 0.004f, 0.033f, 0.3f, 2.5f), 0.044f / 0.033f) &&
-                  Near(LegGirth.CuffScale(1f, 0f, 0.033f, 0.3f, 2.5f), 2.5f) && Near(LegGirth.CuffScale(0.04f, 0f, 0f, 0.3f, 2.5f), 1f),
+            Check(Near(LimbGirth.CuffScale(0.04f, 0.004f, 0.033f, 0.3f, 2.5f), 0.044f / 0.033f) &&
+                  Near(LimbGirth.CuffScale(1f, 0f, 0.033f, 0.3f, 2.5f), 2.5f) && Near(LimbGirth.CuffScale(0.04f, 0f, 0f, 0.3f, 2.5f), 1f),
                   "girth: cuff scale = (leg + clearance) / hole, clamped");
         }
 

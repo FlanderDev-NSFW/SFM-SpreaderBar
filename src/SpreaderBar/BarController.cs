@@ -544,7 +544,7 @@ namespace SpreaderBar
 
         // --- cuff fit: size each cuff to the leg (body + socks + shoes) ------------------------------------------------
         // Every 2 s the player's skinned meshes near the ankles are baked (CPU skinning of the current pose); the vertices in
-        // a thin slice at cuff height give the leg's cross-section (Logic/LegGirth.cs). Kept relative to the shin bone, so the
+        // a thin slice at cuff height give the leg's cross-section (Logic/LimbGirth.cs). Kept relative to the shin bone, so the
         // cuffs follow the leg between measurements.
         private static readonly float[] SliceHeights = { -0.01f, 0f, 0.01f };
         private struct Girth
@@ -586,8 +586,8 @@ namespace SpreaderBar
             var rot = new System.Numerics.Quaternion(shin.rotation.x, shin.rotation.y, shin.rotation.z, shin.rotation.w);
             _outlineWorld.Clear();
             foreach (var p in g.LocalOutline) _outlineWorld.Add(ankle + NVector3.Transform(p, rot));
-            var (_, hx, hz) = LegGirth.Extents(_outlineWorld, ankle, shinAxis, across);
-            NVector3 want = LegGirth.OvalScale(hx, hz, Plugin.ClearanceCm.Value / 100f, Model.Sides[side].HoleRadius, 0.3f, 2.5f,
+            var (_, hx, hz) = LimbGirth.Extents(_outlineWorld, ankle, shinAxis, across);
+            NVector3 want = LimbGirth.OvalScale(hx, hz, Plugin.ClearanceCm.Value / 100f, Model.Sides[side].HoleRadius, 0.3f, 2.5f,
                                                Plugin.MaxOval.Value);
             g.Shown = g.Shown == NVector3.Zero ? want : NVector3.Lerp(g.Shown, want, ease);
             cuffScale = g.Shown;
@@ -648,8 +648,8 @@ namespace SpreaderBar
                 // Three cuts over the ring's height (the leg narrows towards the ankle); the widest decides.
                 foreach (float h in SliceHeights)
                 {
-                    LegGirth.Slice(world, tris, N(cR + axisR.normalized * h), N(axisR), near, ptsR);
-                    LegGirth.Slice(world, tris, N(cL + axisL.normalized * h), N(axisL), near, ptsL);
+                    LimbGirth.Slice(world, tris, N(cR + axisR.normalized * h), N(axisR), near, ptsR);
+                    LimbGirth.Slice(world, tris, N(cL + axisL.normalized * h), N(axisL), near, ptsL);
                 }
                 if (ptsR.Count > beforeR || ptsL.Count > beforeL)
                     sources += r.name + " R" + (ptsR.Count - beforeR) + "/L" + (ptsL.Count - beforeL) + "; ";
@@ -657,8 +657,8 @@ namespace SpreaderBar
             float maxR = Math.Min(0.09f, WidthNow / 100f * 0.45f); // never reach the other leg
             string meshes = MeshNames(sources);
             if (meshes != _girthMeshes) { _girthMeshes = meshes; _girth[0].Ok = _girth[1].Ok = false; } // other clothes: measure afresh
-            Store(0, LegGirth.Measure(ptsR, N(cR), N(axisR), 0.012f, maxR), kneeR);
-            Store(1, LegGirth.Measure(ptsL, N(cL), N(axisL), 0.012f, maxR), kneeL);
+            Store(0, LimbGirth.Measure(ptsR, N(cR), N(axisR), 0.012f, maxR), kneeR);
+            Store(1, LimbGirth.Measure(ptsL, N(cL), N(axisL), 0.012f, maxR), kneeL);
             GirthSources = sources;
             GirthR = _girth[0].Radius;
             GirthL = _girth[1].Radius;
@@ -671,7 +671,7 @@ namespace SpreaderBar
         }
 
         [HideFromIl2Cpp]
-        private void Store(int side, LegGirth.Fit fit, Transform shin)
+        private void Store(int side, LimbGirth.Fit fit, Transform shin)
         {
             if (side == 0) GirthPointsR = fit.Points; else GirthPointsL = fit.Points;
             if (!fit.Ok) return; // keep the last good fit (or the plain Scale)
