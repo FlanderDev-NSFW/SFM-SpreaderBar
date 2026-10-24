@@ -19,6 +19,11 @@ routing and the conflicts with other restraints are the hub's (`mods/RestraintHu
   their printed character, so a German "+" key works), 1 cm per press, hold to repeat, from `MinWidthCm` (16) to `MaxWidthCm` (60).
   The tubes are refitted for each width (the telescope always covers it) and the width is saved in the config. A width below what
   the refitted tubes allow is shown clamped but no longer written back (0.7.0: before, the setting crept up on every launch).
+- **Slower walking** (0.8.0): while the bar is on, walking and crouching are slower, the narrower the bar the slower (short shuffling
+  steps) - the game's own speed (the one Z / X set, 0.65 .. 1.15) times `Walk.SpeedAtMinWidth` (0.35) at the narrowest width, up
+  to `Walk.SpeedAtMaxWidth` (0.6) at the widest, linear in between (over the widths the bar can take: `MinWidthCm` / `MaxWidthCm` within the model's limits). Z / X keep
+  working on top; the walk animation slows with it (the game ties it to the speed). The spread-leg walk pose (its own fixed
+  0.45 m/s, which Z / X do not change) is slowed by the same factor. Everything goes back to the game's values when the bar comes off.
 - **`Mode` SpreadLegWalk** (the 0.3.0 behaviour): the player is also held in the **Spread-Leg Walk** pose (the bar width applies too). The vanilla pose refuses
   crouching, the handcuffs, peeing, items and switches ("Can't do that now"); the bar makes it step aside for them (ended just before the
   game handles the input) and it returns once the player is idle again (0.4 s). Other poses work too; Shift + move ends them and the
@@ -74,13 +79,16 @@ the motion and checks it reproduces the rig. In game:
 | Bar.StepCm | 1 | change per + / - press |
 | Bar.StrideAngle | 30 | how far (deg) the bar may turn from straight across when one foot is ahead; 0 = side by side |
 | Model.CuffHeight | 0.085 | metres above the ankle joint (above the shoe) |
-| Debug.Disable | 0 | bitmask to switch parts off when hunting a conflict: 16 load hook, 32 save hook, 128 the whole controller, 256 leg spreading (live); 1 / 4 / 8 were the input, label and gauge hooks (the hub's since 0.7.0) |
+| Walk.SpeedAtMinWidth | 0.35 | walking / crouching speed factor at the narrowest width (applies live) |
+| Walk.SpeedAtMaxWidth | 0.6 | the same at the widest width, linear in between; both 1 = no slowdown |
+| Debug.Disable | 0 | bitmask to switch parts off when hunting a conflict: 16 load hook, 32 save hook, 128 the whole controller, 256 leg spreading (live), 512 slower walking (live); 1 / 4 / 8 were the input, label and gauge hooks (the hub's since 0.7.0) |
 
 `SpreaderBar.Status` (public static) shows the live state for diagnostics: `./tools/dev.ps1 game get SpreaderBar.Status::State`.
 
 ## Verification
 
-- L1: `tests/SpreaderBar.Tests` (model format, axis conversion incl. winding, tube shortening, pose solve, lock rules).
+- L1: `tests/SpreaderBar.Tests` (model format, axis conversion incl. winding, tube shortening, pose solve, lock rules, speed factor
+  over the width and scaling a game value without compounding it).
 - L3 (2026-10-11, dev copy, isolated saves): ring entry shown and chosen through the real ring UI; pose forced, running/crouch blocked,
   walking works; cuffs around the ankles (screenshots); F unlock with the game's gauge, success after 6 attempts (chance 0.10 -> 0.20),
   pose released and bar hidden; F in the closet area does not unlock (negative control) while F mid-room does; with the game's handcuffs
@@ -114,12 +122,23 @@ the motion and checks it reproduces the rig. In game:
   fitted cuffs are full rings around both ankles; `FitCuffs` off (control) they sink into the skin. Crawling and walking keep the
   fit (2.7-3.3 cm half-widths; without the "keep the largest" rule crawling read 2.1 cm).
 
+- L3 0.8.0 (2026-10-24, first save, Apart; the player's Scale 1.05 gives widths 20.2 .. 91.9 cm): `PlayerLocomotion.CurrentMoveSpeed`
+  and the CharacterController's velocity while holding W, Z / X index -7 (x0.65): no bar 0.715 m/s; bar at 20.6 cm x0.85 -> 0.606,
+  at 64 cm x0.62 -> 0.441 (`speed:` lines logged per width step); X x10 (index 3) with the bar at 64 cm -> 0.779 = 1.1 x 1.15 x 0.62,
+  Z back to -7 -> 0.441; crouching 0.39 -> 0.331; the walk animation's `locomotionMotionSpeed` fell by the same factor (1.065 ->
+  0.903). Spread-leg walk mode: 0.45 -> 0.381. Controls: Debug.Disable 512 live -> 0.715 / 0.39 / 0.45 again; after the unlock
+  MCommon's walk / crouch / gaman speeds read 1.1 / 0.6 / 0.63 and the pose's FloatParam 0.45. (Measured with the first defaults
+  0.85 / 0.5; reversed to 0.35 / 0.6 the same day on the player's request: 21.1 cm x0.35 -> 0.252 m/s, 91.9 cm x0.6 -> 0.429,
+  unlocked 0.715.)
+
 ## Known limits
 
 - Cuff fit: measured from the body and whatever is skinned to the leg; tested barefoot only (no socks or boots at hand). Rigid
   accessories (MeshRenderer, not skinned) at the ankle are not measured.
 
 - The walk animation's stride is longer than the bar allows, so walking at normal speed slides the feet a little.
+- The slowdown scales shared game values (MCommon's base speeds, the spread-leg walk's action record) while the bar is on; another
+  mod changing them at the same time is kept as the new base, but the bar's factor still applies on top.
 - With `StrideAngle` 30 a standing stance with one foot ahead shows the bar slightly diagonal (more visible at wide widths).
 - The width is per config, not per save.
 

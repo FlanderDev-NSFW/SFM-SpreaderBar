@@ -22,7 +22,7 @@ namespace SpreaderBar
     {
         public const string PluginGuid = "com.local.spreaderbar";
         public const string PluginName = "SpreaderBar";
-        public const string PluginVersion = "0.7.0";
+        public const string PluginVersion = "0.8.0";
         private const string ModelResource = "SpreaderBar.assets.spreaderbar.sbm";
 
         internal static ManualLogSource Logger;
@@ -32,12 +32,12 @@ namespace SpreaderBar
         public static ConfigEntry<BarMode> Mode;
         public static ConfigEntry<bool> FitCuffs;
         public static ConfigEntry<int> DebugDisable;
-        public static ConfigEntry<float> Scale, ClearanceCm, MaxOval, StrideAngle, WidthCm, MinWidthCm, MaxWidthCm, StepCm, CuffHeight, AttemptSeconds, SuccessChance; // public: tunable live with the bridge (game set)
+        public static ConfigEntry<float> Scale, ClearanceCm, MaxOval, StrideAngle, WidthCm, MinWidthCm, MaxWidthCm, StepCm, CuffHeight, AttemptSeconds, SuccessChance, SpeedAtMinWidth, SpeedAtMaxWidth; // public: tunable live with the bridge (game set)
 
         public override void Load()
         {
             Logger = Log;
-            DebugDisable = Config.Bind("Debug", "Disable", 0, "Diagnostics: switch parts off to find a conflict. Bitmask: 1 input hook, 4 label hook, 8 unlock gauge hook, 16 load hook, 32 save hook, 128 the whole controller, 256 leg spreading (live).");
+            DebugDisable = Config.Bind("Debug", "Disable", 0, "Diagnostics: switch parts off to find a conflict. Bitmask: 1 input hook, 4 label hook, 8 unlock gauge hook, 16 load hook, 32 save hook, 128 the whole controller, 256 leg spreading (live), 512 slower walking (live).");
             RingLabel = Config.Bind("General", "RingLabel", "Spreader Bar", "Name of the ring menu entry.");
             Mode = Config.Bind("General", "Mode", BarMode.LegsApart,
                 "LegsApart: the bar only holds the ankles apart, on top of any animation or pose. " +
@@ -62,6 +62,12 @@ namespace SpreaderBar
                 new ConfigDescription("How far (degrees) the bar may turn away from straight across the body when one foot is ahead " +
                                       "(walking, stances). 0 = always side by side.", new AcceptableValueRange<float>(0f, 80f)));
             StepCm = Config.Bind("Bar", "StepCm", 1f, new ConfigDescription("Width change per + / - press (holding repeats).", new AcceptableValueRange<float>(0.2f, 10f)));
+            SpeedAtMinWidth = Config.Bind("Walk", "SpeedAtMinWidth", 0.35f,
+                new ConfigDescription("While the bar is on, walking and crouching are slower: the game's speed (the one Z / X set) times " +
+                                      "this at the narrowest width (MinWidthCm, or the model's limit). Applies live.", new AcceptableValueRange<float>(0.05f, 1f)));
+            SpeedAtMaxWidth = Config.Bind("Walk", "SpeedAtMaxWidth", 0.6f,
+                new ConfigDescription("The same factor at the widest width (MaxWidthCm, or the model's limit); linear in between. " +
+                                      "Both 1 = no slowdown.", new AcceptableValueRange<float>(0.05f, 1f)));
             FitCuffs = Config.Bind("Model", "FitCuffs", true,
                 "Size each cuff to the leg it closes around (measured from the body, socks and shoes every 2 s). Off: cuffs use Scale.");
             ClearanceCm = Config.Bind("Model", "ClearanceCm", 0.4f,
@@ -116,6 +122,7 @@ namespace SpreaderBar
             // The tubes are refitted for each bar width (BarController.ApplyWidth); keep their original shape.
             BarController.TubeOriginals = BarFit.SaveTubes(model);
             BarController.FullLengthHoleMax = BarFit.FullLengthMax(model, BarController.TubeOriginals);
+            BarController.ShortestHoleMin = BarFit.FitFor(model, BarController.TubeOriginals, 0f).Min; // refitted for the width below
             BarController.FitModel(model, WidthCm.Value);
             return model;
         }

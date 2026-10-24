@@ -34,6 +34,7 @@ namespace SpreaderBar.Tests
             LegTests();
             GirthTests();
             PoseCuffScaleTests();
+            SlowdownTests();
 
             Console.WriteLine(_passed + " passed, " + _failed + " failed");
             return _failed == 0 ? 0 : 1;
@@ -436,6 +437,24 @@ namespace SpreaderBar.Tests
             Vector3 cuffEyeL = p.CuffPositionL + Vector3.Transform((left.Eye - left.Hole) * 0.9f, p.CuffRotationL);
             Vector3 barEyeL = p.BarPositionL + Vector3.Transform((left.Eye - left.Hole) * 0.75f, p.BarRotation);
             Check(Near(cuffEyeR, barEyeR, 1e-4f) && Near(cuffEyeL, barEyeL, 1e-4f) && !p.Clamped, "pose: bar eyes meet differently sized cuffs");
+        }
+        private static void SlowdownTests()
+        {
+            Check(Near(WalkSlowdown.Factor(16f, 16f, 60f, 0.85f, 0.5f), 0.85f) && Near(WalkSlowdown.Factor(60f, 16f, 60f, 0.85f, 0.5f), 0.5f) &&
+                  Near(WalkSlowdown.Factor(38f, 16f, 60f, 0.85f, 0.5f), 0.675f), "slowdown: narrowest / widest / middle width");
+            Check(Near(WalkSlowdown.Factor(10f, 16f, 60f, 0.85f, 0.5f), 0.85f) && Near(WalkSlowdown.Factor(80f, 16f, 60f, 0.85f, 0.5f), 0.5f),
+                  "slowdown: widths outside the range use its ends");
+            Check(Near(WalkSlowdown.Factor(30f, 30f, 30f, 0.8f, 0.5f), 0.8f) && Near(WalkSlowdown.Factor(60f, 16f, 60f, 1.5f, -1f), 0f) &&
+                  Near(WalkSlowdown.Factor(16f, 16f, 60f, 1.5f, 0.5f), 1f), "slowdown: empty range, factor kept within 0..1");
+
+            var v = new ScaledValue();
+            float w = v.Next(1.1f, 0.5f);
+            Check(Near(w, 0.55f) && Near(v.Next(w, 0.5f), 0.55f) && Near(v.Next(0.55f, 0.4f), 0.44f),
+                  "scaled value: its own write is not taken as the game's (no compounding), a new factor applies to the base");
+            Check(Near(v.Next(0.65f, 0.5f), 0.325f) && Near(v.Base, 0.65f), "scaled value: a value the game writes becomes the base");
+            Check(Near(v.Release(0.325f), 0.65f) && !v.Active, "scaled value: released, the game's value goes back");
+            v.Next(1f, 0.5f);
+            Check(Near(v.Release(0.9f), 0.9f), "scaled value: released after the game wrote a new value, that one stays");
         }
     }
 }

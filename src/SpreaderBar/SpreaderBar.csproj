@@ -4,7 +4,7 @@
   <PropertyGroup>
     <AssemblyName>SpreaderBar</AssemblyName>
     <RootNamespace>SpreaderBar</RootNamespace>
-    <Version>0.7.0</Version>
+    <Version>0.8.0</Version>
     <Description>SpreaderBar - leg spreader bar for SecretFlasherManaka (BepInEx IL2CPP)</Description>
   </PropertyGroup>
 

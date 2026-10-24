@@ -33,12 +33,16 @@ namespace SpreaderBar
         internal static float MinHoleDistance, MaxHoleDistance; // current telescope range (model metres), refitted per width
         internal static System.Numerics.Vector3[][] TubeOriginals;
         internal static float FullLengthHoleMax;                 // model metres, tubes at full length
+        internal static float ShortestHoleMin;                   // model metres, tubes at their shortest
         public static float WidthNow;                           // cm, applied (diagnostics: game get SpreaderBar.BarController::WidthNow)
 
         // --- width (+ / -) ----------------------------------------------------------------------------------------------
 
         /// <summary>Widest width the model allows (cm), within the config's maximum.</summary>
         internal static float WidestCm() => Math.Min(Plugin.MaxWidthCm.Value, FullLengthHoleMax * Plugin.Scale.Value * 100f - 3f);
+
+        /// <summary>Narrowest width the model allows (cm), within the config's minimum.</summary>
+        internal static float NarrowestCm() => Math.Max(Plugin.MinWidthCm.Value, ShortestHoleMin * Plugin.Scale.Value * 100f);
 
         /// <summary>Refit the tubes so <paramref name="cm"/> (clamped) lies inside the telescope; returns the width used.</summary>
         internal static float FitModel(BarModel model, float cm)
@@ -182,6 +186,9 @@ namespace SpreaderBar
                     break;
             }
 
+            try { UpdateSpeed(); }
+            catch (Exception e) { Fail("walking speed", e); }
+
             var pca = player.Pca;
             bool poseMode = Plugin.Mode.Value == BarMode.SpreadLegWalk;
             if (Machine.Worn && poseMode) KeepPose(pca);
@@ -261,6 +268,54 @@ namespace SpreaderBar
                 if (common.HandcuffsAddProbabilityByFailure > 0f) Machine.ChancePerFailure = common.HandcuffsAddProbabilityByFailure;
             }
             catch (Exception e) { Fail("reading handcuff tuning", e); }
+        }
+
+        // --- walking speed -----------------------------------------------------------------------------------------------
+        // The game moves the player at MCommon's base speed (walk 1.1, crouch 0.6 m/s ...) times the Z / X scale (0.65 .. 1.15):
+        // PlayerLocomotion.CurrentMoveSpeed 0.715 walking and 0.39 crouching at 0.65, 0.3575 walking with playerWalkSpeed
+        // halved live [observed 2026-10-24]. While the bar is on it scales those base speeds, so Z / X keep working on top; they
+        // go back when it comes off. The walk animation follows by itself: PlayerAnimationManager.locomotionMotionSpeed fell
+        // by the same factor (0.677 -> 0.539 at x0.80) [observed 2026-10-24]. The spread-leg walk has a speed of its own, its
+        // action record's FloatParam (0.45 m/s; set to 0.3 it walked at 0.3; Z / X leave it alone) [observed 2026-10-24].
+        public static float SpeedFactor = 1f; // diagnostics: the factor applied
+        private readonly ScaledValue _walkSpeed = new ScaledValue(), _crouchSpeed = new ScaledValue(), _gamanSpeed = new ScaledValue();
+        private readonly ScaledValue _spreadWalkSpeed = new ScaledValue();
+
+        private bool SlowWalking => Machine.Worn && (Plugin.DebugDisable.Value & 512) == 0;
+
+        [HideFromIl2Cpp]
+        private void UpdateSpeed()
+        {
+            var common = MCommon.Instance;
+            if (common == null) return;
+            if (SlowWalking)
+            {
+                // Over the widths the bar can take (MinWidthCm 8 still ends at the model's 15.2 cm).
+                float narrowest = NarrowestCm();
+                float f = WalkSlowdown.Factor(WidthNow, narrowest, Math.Max(narrowest, WidestCm()), Plugin.SpeedAtMinWidth.Value,
+                                              Plugin.SpeedAtMaxWidth.Value);
+                if (f != SpeedFactor) Plugin.Logger.LogInfo("[SFM-ACCEPT] speed: x" + f.ToString("0.00") + " at " + WidthNow.ToString("0.0") + " cm (" +
+                                                       narrowest.ToString("0.0") + " .. " + WidestCm().ToString("0.0") + ")");
+                SpeedFactor = f;
+                common.playerWalkSpeed = _walkSpeed.Next(common.playerWalkSpeed, f);
+                common.playerCrouchSpeed = _crouchSpeed.Next(common.playerCrouchSpeed, f);
+                common.PlayerGamanWalkSpeed = _gamanSpeed.Next(common.PlayerGamanWalkSpeed, f);
+                var spread = MAction.Get(ActionType.GanimataWalk);
+                if (spread != null) spread.FloatParam = _spreadWalkSpeed.Next(spread.FloatParam, f);
+            }
+            else if (_walkSpeed.Active) ReleaseSpeed(common);
+        }
+
+        [HideFromIl2Cpp]
+        private void ReleaseSpeed(MCommon common)
+        {
+            common.playerWalkSpeed = _walkSpeed.Release(common.playerWalkSpeed);
+            common.playerCrouchSpeed = _crouchSpeed.Release(common.playerCrouchSpeed);
+            common.PlayerGamanWalkSpeed = _gamanSpeed.Release(common.PlayerGamanWalkSpeed);
+            var spread = MAction.Get(ActionType.GanimataWalk);
+            if (spread != null && _spreadWalkSpeed.Active) spread.FloatParam = _spreadWalkSpeed.Release(spread.FloatParam);
+            SpeedFactor = 1f;
+            Plugin.Logger.LogInfo("[SFM-ACCEPT] speed: back to the game's (walk " + common.playerWalkSpeed.ToString("0.###") + ")");
         }
 
         // --- pose --------------------------------------------------------------------------------------------------------
@@ -655,6 +710,8 @@ namespace SpreaderBar
             if (_preCull != null && Camera.onPreCull != null)
                 Camera.onPreCull = Il2CppSystem.Delegate.Remove(Camera.onPreCull, _preCull)?.Cast<Camera.CameraCallback>();
             _rig?.Destroy();
+            try { if (_walkSpeed.Active && MCommon.Instance != null) ReleaseSpeed(MCommon.Instance); }
+            catch (Exception e) { Fail("walking speed", e); }
             if (_bakeMesh != null) Destroy(_bakeMesh);
             if (Instance == this) Instance = null;
         }
