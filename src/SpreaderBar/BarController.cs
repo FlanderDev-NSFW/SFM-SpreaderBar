@@ -19,7 +19,8 @@ using SfmKit.Pure;
 namespace SpreaderBar
 {
     /// <summary>
-    /// Drives the bar each frame: ring entry, lock state, forced spread-leg walk, model placement.
+    /// Drives the bar each frame: lock state, forced spread-leg walk, model placement. The ring entry, number shortcuts,
+    /// F / + / - routing and the unlock gauge are RestraintHub's (Plugin.Entry).
     /// Game facts used here are in docs/knowledge/api-notes (player-and-movement, ui-and-input) and mods/SpreaderBar/README.md.
     /// </summary>
     public sealed class BarController : MonoBehaviour
@@ -50,29 +51,21 @@ namespace SpreaderBar
             return cm;
         }
 
-        private float _repeatAt;
+        private float _configWidth = float.NaN; // the config value last applied (the bar itself may be clamped wider)
 
         [HideFromIl2Cpp]
         private void WatchWidthKeys()
         {
-            if (Math.Abs(Plugin.WidthCm.Value - WidthNow) > 1e-3f) ApplyWidth(Plugin.WidthCm.Value, false); // config edited
-            if (!Machine.Worn || UiOpen()) return;
-            var kb = UnityEngine.InputSystem.Keyboard.current;
-            if (kb == null) return;
-            // US: "+" is Shift + "=", so the "=" key counts as "+" too (de layout: "+" has its own key, "=" is not found).
-            int dir = Held(kb, "+", kb.numpadPlusKey) || Held(kb, "=", null) ? 1 : Held(kb, "-", kb.numpadMinusKey) ? -1 : 0;
-            if (dir == 0) { _repeatAt = 0f; return; }
-            bool first = _repeatAt == 0f;
-            if (!first && Time.unscaledTime < _repeatAt) return;
-            _repeatAt = Time.unscaledTime + (first ? 0.4f : 0.08f); // hold to repeat
+            if (Plugin.WidthCm.Value != _configWidth) // config edited (or first frame)
+            {
+                _configWidth = Plugin.WidthCm.Value;
+                ApplyWidth(_configWidth, false);
+            }
+            // + / - (the printed keys, numpad, "=" on US layouts; hold repeats) reach the bar only while it is the selected
+            // restraint - the hub routes them, outside menus.
+            int dir = Plugin.Entry.TakeStep();
+            if (dir == 0 || !Machine.Worn) return;
             ApplyWidth(WidthNow + dir * Plugin.StepCm.Value, true);
-        }
-
-        private static bool Held(UnityEngine.InputSystem.Keyboard kb, string character, UnityEngine.InputSystem.Controls.KeyControl numpad)
-        {
-            if (numpad != null && numpad.isPressed) return true;
-            var key = kb.FindKeyOnCurrentKeyboardLayout(character); // the key printed "+" / "-" on this layout (de: "+" is right of Ü)
-            return key != null && key.isPressed;
         }
 
         [HideFromIl2Cpp]
@@ -80,19 +73,22 @@ namespace SpreaderBar
         {
             float used = FitModel(Model, cm);
             _rig?.RefreshTubes();
+            if (!fromKeys) return;
+            // Only + / - store the width. Writing back a clamped config value moved the user's setting on every launch (narrow
+            // widths are clamped up to what the refitted tubes allow: 21.36 -> 21.46 -> 21.53 cm) [observed 2026-10-24].
+            _configWidth = used;
             if (Math.Abs(Plugin.WidthCm.Value - used) > 1e-3f) Plugin.WidthCm.Value = used; // saved to the config
-            if (fromKeys) Plugin.Logger.LogInfo("[SFM-ACCEPT] width: " + used.ToString("0.0") + " cm");
+            Plugin.Logger.LogInfo("[SFM-ACCEPT] width: " + used.ToString("0.0") + " cm");
         }
 
         internal readonly LockMachine Machine = new LockMachine();
-        internal bool InteractHeld;
+        internal bool InteractHeld; // F as the game sees it this frame (after the hub; OnInput)
 
         private BarRig _rig;
-        private IntPtr _ringArray, _gameData;
+        private IntPtr _gameData;
         private float _nextPoseTry;
         private bool _tunedFromGame, _releasePose;
         private Transform _uiLayer;
-        private static Il2CppSystem.Func<bool> _alwaysReleased;
         private static int _failures;
         private int _refusals;
         private bool _poseRequested;
@@ -154,10 +150,6 @@ namespace SpreaderBar
         [HideFromIl2Cpp]
         private void Tick()
         {
-            EnsureRingEntry();
-            WatchRingChoice();
-            SyncShortcuts();
-            WatchShortcuts();
             WatchWidthKeys();
             TrackSaveIdentity();
             var player = PlayerController.Instance;
@@ -166,12 +158,11 @@ namespace SpreaderBar
 
             Machine.AttemptSeconds = Plugin.AttemptSeconds.Value; // live: config edits apply without a restart
             Machine.BaseChance = Plugin.SuccessChance.Value;
-            // Interactions take precedence: no unlocking inside an interaction area (closet, PC, machines ...), even though the
-            // pose hides their prompt; nor while the game's own handcuffs use F, nor in menus.
-            bool unlockAllowed = InteractHeld && Machine.State == LockState.Locked && !GameStateFacade.IsAttachSomeHandcuffs()
-                                 && !UiOpen() && !InInteractArea();
+            // F counts only while the bar is the selected restraint (with the game's handcuffs on too, whichever is selected
+            // gets F), outside menus and interaction areas (closet, PC ... - the pose hides their prompt): the hub decides.
+            bool unlockAllowed = Plugin.Entry.StruggleHeld && Machine.State == LockState.Locked;
             var ev = Machine.Tick(Time.deltaTime, unlockAllowed, UnityEngine.Random.value);
-            Status.Update(Machine, InteractHeld, unlockAllowed);
+            Status.Update(Machine, Plugin.Entry.StruggleHeld, unlockAllowed);
             switch (ev)
             {
                 case LockMachine.Event.Locked:
@@ -197,105 +188,9 @@ namespace SpreaderBar
             else if (_releasePose) ReleasePose(pca);
         }
 
-        // --- ring choice --------------------------------------------------------------------------------------------------
-        // A click on the selected ring entry runs it. There is no hook on the game's handler (RingMenuParentView.
-        // OnInvokeCommandCommon: patching it made saving crash) and the ring views are rebuilt on every opening, so the
-        // choice is read here: our entry selected on the shown page + a left click this frame [observed 2026-10-11].
-
-        [HideFromIl2Cpp]
-        private void WatchRingChoice()
-        {
-            var parent = RingMenuParentView.Instance;
-            if (parent == null || !parent.IsOpenRing) return;
-            var mouse = UnityEngine.InputSystem.Mouse.current;
-            if (mouse == null || !mouse.leftButton.wasPressedThisFrame) return;
-            var views = parent.openRingList;
-            int page = parent.CurrentRingIndexCommon;
-            if (views == null || page < 0 || page >= views.Count) return;
-            var selected = views[page] == null ? null : views[page].currentSelectView;
-            if (selected != null && selected.Model != null && (int)selected.Model.RingItemType == RingItemValue) OnRingChosen();
-        }
-
-        // Number shortcuts: releasing ring key N over an entry stores it in that key's lastInvokeModel* (shown bottom right)
-        // and its index in GameStateData.RingShortcutModelIndex*; a short tap of N runs it through OnInvokeCommandCommon,
-        // which ignores our entry. The index is saved, and on load RingMenuParentView.Initialize reads
-        // commonRingMenuModel[index] before our entry exists: index 31 threw IndexOutOfRange and the stage never started
-        // [observed 2026-10-11]. So the stored index never points at our entry (the key's previous vanilla entry is kept
-        // there), the keys holding the bar are saved under our own key and put back whenever the ring is rebuilt.
-
-        /// <summary>Common ring entries without the mod (used to repair saves written by 0.1.0) [observed 2026-10-11].</summary>
-        internal static int VanillaRingCount = 31;
-        private int _ringIndex = -1;           // our entry's index in the current ring array
-        private int _barKeys;                  // bit k: shortcut key k+1 runs the bar
-        private bool _applyShortcuts;          // a new ring array (load, stage change): put the bar back on its keys
-        private readonly int[] _fallbackIndex = new int[8];
-
-        internal int ShortcutMask => _barKeys;
-
-        internal void OnShortcutsLoaded(int mask)
-        {
-            _barKeys = mask & 0xFF;
-            _applyShortcuts = true;
-        }
-
-        [HideFromIl2Cpp]
-        private void SyncShortcuts()
-        {
-            var parent = RingMenuParentView.Instance;
-            var data = GameState.GameStateData;
-            if (parent == null || data == null || _ringIndex < 0 || _ringArray != parent.commonRingMenuModel?.Pointer) return;
-            var ours = parent.commonRingMenuModel[_ringIndex];
-            if (_applyShortcuts)
-            {
-                _applyShortcuts = false;
-                for (int k = 0; k < 8; k++)
-                    if ((_barKeys & (1 << k)) != 0) SetShortcutModel(parent, k, ours);
-                if (_barKeys != 0) Plugin.Logger.LogInfo("[SFM-ACCEPT] shortcut: bar restored on keys " + KeyList(_barKeys));
-            }
-            for (int k = 0; k < 8; k++)
-            {
-                var model = ShortcutModel(parent, k);
-                int index = ShortcutIndex(data, k);
-                if (model != null && (int)model.RingItemType == RingItemValue)
-                {
-                    if ((_barKeys & (1 << k)) == 0) Plugin.Logger.LogInfo("[SFM-ACCEPT] shortcut: bar assigned to key " + (k + 1));
-                    _barKeys |= 1 << k;
-                    if (index == _ringIndex) SetShortcutIndex(data, k, _fallbackIndex[k]);
-                }
-                else
-                {
-                    _barKeys &= ~(1 << k); // reassigned to a vanilla entry
-                    if (index >= 0 && index < VanillaRingCount) _fallbackIndex[k] = index;
-                }
-            }
-        }
-
-        private static string KeyList(int mask)
-        {
-            var s = "";
-            for (int k = 0; k < 8; k++) if ((mask & (1 << k)) != 0) s += (s.Length == 0 ? "" : ",") + (k + 1);
-            return s;
-        }
-
-        [HideFromIl2Cpp]
-        private static void SetShortcutModel(RingMenuParentView p, int key, RingMenuItemModel model)
-        {
-            switch (key)
-            {
-                case 0: p.lastInvokeModelCommon = model; break;
-                case 1: p.lastInvokeModelSkill = model; break;
-                case 2: p.lastInvokeModelSkill3 = model; break;
-                case 3: p.lastInvokeModelSkill4 = model; break;
-                case 4: p.lastInvokeModelSkill5 = model; break;
-                case 5: p.lastInvokeModelSkill6 = model; break;
-                case 6: p.lastInvokeModelSkill7 = model; break;
-                default: p.lastInvokeModelSkill8 = model; break;
-            }
-            var views = p.shortcutItemViews;
-            if (views == null) return;
-            foreach (var v in views)
-                if (v != null && (int)v.type == key) v.SetName(model);
-        }
+        /// <summary>Common ring entries of the game (a stored shortcut index must stay below; used to repair saves written by
+        /// 0.1.0) [observed 2026-10-11].</summary>
+        internal const int VanillaRingCount = 31;
 
         internal static int ShortcutIndex(GameStateData d, int key) => key switch
         {
@@ -319,36 +214,7 @@ namespace SpreaderBar
             }
         }
 
-        private static readonly InputManager.InputType[] ShortcutKeys =
-        {
-            InputManager.InputType.CommonRingMenu, InputManager.InputType.SkillRingMenu, InputManager.InputType.SkillRingMenu3,
-            InputManager.InputType.SkillRingMenu4, InputManager.InputType.SkillRingMenu5, InputManager.InputType.SkillRingMenu6,
-            InputManager.InputType.SkillRingMenu7, InputManager.InputType.SkillRingMenu8,
-        };
-
-        [HideFromIl2Cpp]
-        private void WatchShortcuts()
-        {
-            var parent = RingMenuParentView.Instance;
-            if (parent == null || parent.IsOpenRing || PlayerController.Instance == null || UiOpen()) return;
-            for (int i = 0; i < ShortcutKeys.Length; i++)
-            {
-                var model = ShortcutModel(parent, i);
-                if (model == null || (int)model.RingItemType != RingItemValue) continue;
-                if (!parent.GetShortUp(ShortcutKeys[i])) continue;
-                Plugin.Logger.LogInfo("[SFM-ACCEPT] shortcut: key " + (i + 1) + " runs the spreader bar entry");
-                OnRingChosen();
-                return;
-            }
-        }
-
-        private static RingMenuItemModel ShortcutModel(RingMenuParentView p, int key) => key switch
-        {
-            0 => p.lastInvokeModelCommon, 1 => p.lastInvokeModelSkill, 2 => p.lastInvokeModelSkill3, 3 => p.lastInvokeModelSkill4,
-            4 => p.lastInvokeModelSkill5, 5 => p.lastInvokeModelSkill6, 6 => p.lastInvokeModelSkill7, _ => p.lastInvokeModelSkill8,
-        };
-
-        /// <summary>Our ring entry was chosen.</summary>
+        /// <summary>The ring entry or a number key, when the bar is off and nothing worn holds her legs (the hub checked).</summary>
         [HideFromIl2Cpp]
         internal void OnRingChosen()
         {
@@ -382,7 +248,6 @@ namespace SpreaderBar
             _gameData = ptr;
             if (Machine.Worn) Plugin.Logger.LogInfo("game data replaced without a load: spreader bar reset");
             Machine.Reset();
-            _barKeys = 0;
         }
 
         [HideFromIl2Cpp]
@@ -412,6 +277,7 @@ namespace SpreaderBar
         [HideFromIl2Cpp]
         internal void OnInput(InputData r)
         {
+            InteractHeld = r.Interact; // F after the hub (with the game's handcuffs on: only when they are the selected item)
             var pca = PlayerController.Instance == null ? null : PlayerController.Instance.Pca;
             var action = pca == null || pca.PlayerState == null ? null : pca.PlayerState.CurrentAction;
             if (action == null) return;
@@ -732,46 +598,6 @@ namespace SpreaderBar
             thigh.rotation = t * thigh.rotation;
             shin.rotation = t * U(fix.Knee) * shinOld;
             foot.rotation = footOld;
-        }
-
-        // --- ring entry --------------------------------------------------------------------------------------------------
-
-        [HideFromIl2Cpp]
-        private void EnsureRingEntry()
-        {
-            var view = RingMenuParentView.Instance;
-            if (view == null) return;
-            var models = view.commonRingMenuModel;
-            if (models == null || models.Pointer == _ringArray) return;
-            for (int i = 0; i < models.Length; i++)
-                if (models[i] != null && (int)models[i].RingItemType == RingItemValue)
-                {
-                    _ringArray = models.Pointer;
-                    _ringIndex = i;
-                    _applyShortcuts = true;
-                    return;
-                }
-
-            if (_alwaysReleased == null) _alwaysReleased = DelegateSupport.ConvertDelegate<Il2CppSystem.Func<bool>>(new Func<bool>(() => true));
-            var entry = new RingMenuItemModel
-            {
-                RingItemType = (RingMenuParentView.RingItemType)RingItemValue,
-                NameKey = Patches.LabelKey,
-                Index = models.Length,
-                ReleaseCondition = _alwaysReleased,
-            };
-            var grown = new Il2CppReferenceArray<RingMenuItemModel>(models.Length + 1);
-            for (int i = 0; i < models.Length; i++) grown[i] = models[i];
-            grown[models.Length] = entry;
-            view.commonRingMenuModel = grown;
-            _ringArray = grown.Pointer;
-            _ringIndex = models.Length;
-            // Only the game's own entries count (other mods - e.g. WallRestraint - may have added theirs first, values 9000+):
-            // a stored shortcut index must stay below this, or loading crashes.
-            VanillaRingCount = SfmKit.Game.RingEntry.CountVanilla(models);
-            _applyShortcuts = true;
-            Plugin.Logger.LogInfo("[SFM-ACCEPT] ring: entry added at index " + models.Length);
-            // 8 slots per page; the ring adds pages as needed (33 entries -> 5 pages) [observed 2026-10-24, with WallRestraint].
         }
 
         // --- helpers -----------------------------------------------------------------------------------------------------

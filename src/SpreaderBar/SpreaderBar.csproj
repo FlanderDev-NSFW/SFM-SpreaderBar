@@ -4,7 +4,7 @@
   <PropertyGroup>
     <AssemblyName>SpreaderBar</AssemblyName>
     <RootNamespace>SpreaderBar</RootNamespace>
-    <Version>0.6.0</Version>
+    <Version>0.7.0</Version>
     <Description>SpreaderBar - leg spreader bar for SecretFlasherManaka (BepInEx IL2CPP)</Description>
   </PropertyGroup>
 
@@ -13,6 +13,8 @@
     <Reference Include="UnityEngine.UIModule"><HintPath>$(SfmInterop)\UnityEngine.UIModule.dll</HintPath><Private>false</Private></Reference>
     <!-- The model, exported from the .blend by tools/export_model.py (see README). -->
     <EmbeddedResource Include="assets\spreaderbar.sbm" LogicalName="SpreaderBar.assets.spreaderbar.sbm" />
+    <!-- Hard dependency: ring entry, selection, F / + / - routing, input blocking (deployed and packaged next to this mod). -->
+    <ProjectReference Include="..\RestraintHub\RestraintHub.csproj" Private="false" />
   </ItemGroup>
 
   <Import Project="$(RepoRoot)build\SfmKit.props" />

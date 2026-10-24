@@ -1,9 +1,12 @@
 # SpreaderBar
 
-A leg spreader bar for SecretFlasherManaka, used like the game's normal handcuffs but for the legs:
+A leg spreader bar for SecretFlasherManaka, used like the game's normal handcuffs but for the legs. **Needs RestraintHub**
+(0.7.0+; included in the package): the ring entry, number shortcuts, the list of worn restraints with the selected one, F and + / -
+routing and the conflicts with other restraints are the hub's (`mods/RestraintHub/README.md`).
 
-- **Ring menu** (hold 1): entry **"Spreader Bar"**, always owned. It is the last slot of the common ring (page 4 with Z/X, after
-  the poses). Click it to lock the bar; choosing it again while it is on does nothing (like the handcuffs).
+- **Ring menu** (hold 1): entry **"Spreader Bar"**, always owned, on the restraint page after the game's (page 5 with Z/X). Click it
+  to lock the bar; choosing it again while it is on selects it in the hub's list. Refused while another restraint holds her legs
+  (the wall restraint).
 - **Number shortcut:** like any ring entry, release a ring key (1-8) over it to put it on that key (shown bottom right); a short tap of
   the key then locks the bar. Kept in the save and across map changes.
 - **Locked (`Mode` LegsApart, default):** the cuffs close around the ankles and the bar holds them **exactly its width apart** on top
@@ -12,20 +15,21 @@ A leg spreader bar for SecretFlasherManaka, used like the game's normal handcuff
   from straight across the body, so a step stays a (shorter) step. Each leg is bent with a two-bone solve (hip fixed, knee in its
   plane, foot keeps its angle) after the animation, every frame; when a leg cannot reach (wide bar, straight legs) the hips come down
   just enough for the knees to bend - no bone is stretched and the feet stay on the floor. One lock mode only.
-- **Width:** `+` / `-` while the bar is on (also numpad + / -; on a US keyboard the `=` key counts as `+`; the keys are looked up by
+- **Width:** `+` / `-` while the bar is on and selected in the hub's list (also numpad + / -; on a US keyboard the `=` key counts as `+`; the keys are looked up by
   their printed character, so a German "+" key works), 1 cm per press, hold to repeat, from `MinWidthCm` (16) to `MaxWidthCm` (60).
-  The tubes are refitted for each width (the telescope always covers it) and the width is saved in the config.
+  The tubes are refitted for each width (the telescope always covers it) and the width is saved in the config. A width below what
+  the refitted tubes allow is shown clamped but no longer written back (0.7.0: before, the setting crept up on every launch).
 - **`Mode` SpreadLegWalk** (the 0.3.0 behaviour): the player is also held in the **Spread-Leg Walk** pose (the bar width applies too). The vanilla pose refuses
   crouching, the handcuffs, peeing, items and switches ("Can't do that now"); the bar makes it step aside for them (ended just before the
   game handles the input) and it returns once the player is idle again (0.4 s). Other poses work too; Shift + move ends them and the
   spread-leg walk comes back. With the game's handcuffs on, the legs still go into the pose (arms stay cuffed behind the back).
-- **Unlock:** hold the interact key (F) for `AttemptSeconds` (4.5 s): one try frees the legs (`SuccessChance` 1). The game's own
+- **Unlock:** with the bar selected in the hub's list, hold the interact key (F) for `AttemptSeconds` (4.5 s): one try frees the legs (`SuccessChance` 1). The game's own
   "Unlocking..." gauge shows the progress. A lower `SuccessChance` makes it work like the normal handcuffs (several tries, +2 % per
   failure).
-- **Interactions take precedence:** inside an interaction area (closet, PC, machines ...) F never unlocks the bar. While the game's
-  handcuffs are on, F goes to them first. (SpreadLegWalk mode: like vanilla, the pose hides interaction prompts; it steps aside for the
+- **Interactions take precedence:** inside an interaction area (closet, PC, machines ...) F never unlocks the bar. With the game's
+  handcuffs on too, F goes to whichever of the two is selected in the hub's list (`B` switches). (SpreadLegWalk mode: like vanilla, the pose hides interaction prompts; it steps aside for the
   handcuff struggle and returns when F is released.)
-- **Saved** with the game (three keys in the slot's save file, ignored by the game without the mod); kept across map changes.
+- **Saved** with the game (three keys in the slot's save file; the shortcut key is written by the hub, ignored by the game without the mod); kept across map changes.
   The game stores shortcuts as ring indices, and an index the game does not know breaks loading (the stage never starts). So the save
   never holds the bar's index: a key with the bar keeps the key's previous vanilla entry in the game data, and the mod's own key
   (`SpreaderBar.Shortcuts`) puts the bar back. Without the mod such a key simply shows that vanilla entry again.
@@ -70,7 +74,7 @@ the motion and checks it reproduces the rig. In game:
 | Bar.StepCm | 1 | change per + / - press |
 | Bar.StrideAngle | 30 | how far (deg) the bar may turn from straight across when one foot is ahead; 0 = side by side |
 | Model.CuffHeight | 0.085 | metres above the ankle joint (above the shoe) |
-| Debug.Disable | 0 | bitmask to switch parts off when hunting a conflict (256 = leg spreading, live) |
+| Debug.Disable | 0 | bitmask to switch parts off when hunting a conflict: 16 load hook, 32 save hook, 128 the whole controller, 256 leg spreading (live); 1 / 4 / 8 were the input, label and gauge hooks (the hub's since 0.7.0) |
 
 `SpreaderBar.Status` (public static) shows the live state for diagnostics: `./tools/dev.ps1 game get SpreaderBar.Status::State`.
 
@@ -119,5 +123,5 @@ the motion and checks it reproduces the rig. In game:
 - With `StrideAngle` 30 a standing stance with one foot ahead shows the bar slightly diagonal (more visible at wide widths).
 - The width is per config, not per save.
 
-- The ring has pages of 8 slots and grows a page when needed (seen with WallRestraint's entry on a 5th page, 2026-10-24); earlier
-  versions assumed 32 fixed slots and logged a needless warning at 32 entries.
+- Before 0.7.0 the bar added its own ring entry (index 31, after the game's) and handled + / - and F itself; with the yoke on too,
+  one press changed both widths and one F hold freed both. The hub now does the ring and routes the keys to the selected restraint.

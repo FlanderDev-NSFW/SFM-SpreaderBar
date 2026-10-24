@@ -5,6 +5,7 @@ using BepInEx.Configuration;
 using BepInEx.Logging;
 using BepInEx.Unity.IL2CPP;
 using Il2CppInterop.Runtime.Injection;
+using RestraintHub;
 using SpreaderBar.Logic;
 
 namespace SpreaderBar
@@ -16,14 +17,17 @@ namespace SpreaderBar
     public enum BarMode { LegsApart, SpreadLegWalk }
 
     [BepInPlugin(PluginGuid, PluginName, PluginVersion)]
+    [BepInDependency(Hub.Guid, BepInDependency.DependencyFlags.HardDependency)]
     public sealed class Plugin : BasePlugin
     {
         public const string PluginGuid = "com.local.spreaderbar";
         public const string PluginName = "SpreaderBar";
-        public const string PluginVersion = "0.6.0";
+        public const string PluginVersion = "0.7.0";
         private const string ModelResource = "SpreaderBar.assets.spreaderbar.sbm";
 
         internal static ManualLogSource Logger;
+        /// <summary>The bar's registration with RestraintHub (ring entry, selection, F and + / -).</summary>
+        internal static Restraint Entry;
         public static ConfigEntry<string> RingLabel;
         public static ConfigEntry<BarMode> Mode;
         public static ConfigEntry<bool> FitCuffs;
@@ -82,6 +86,23 @@ namespace SpreaderBar
             Patches.Apply(new HarmonyLib.Harmony(PluginGuid));
             ClassInjector.RegisterTypeInIl2Cpp<BarController>();
             if ((DebugDisable.Value & 128) == 0) AddComponent<BarController>();
+            Entry = new Restraint
+            {
+                Id = "SpreaderBar",
+                RingValue = BarController.RingItemValue,
+                Label = () => RingLabel.Value,
+                ShortcutSaveKey = Patches.SaveKeyShortcuts,
+                OnShortcutsMissing = Patches.RepairShortcuts,
+                Holds = BodyParts.Legs,
+                IsWorn = () => BarController.Instance != null && BarController.Instance.Machine.Worn,
+                // No running; the rest (yielding the forced pose to actions, no running in it) is BarController.OnInput.
+                Blocks = () => RestraintHub.Blocks.Running,
+                OnChosen = () => { var c = BarController.Instance; if (c != null) c.OnRingChosen(); },
+                Attempt = () => BarController.Instance == null ? 0f : BarController.Instance.Machine.Attempt,
+                OnInput = i => { var c = BarController.Instance; if (c != null) c.OnInput(i); },
+                Controls = "+/- width",
+            };
+            Hub.Register(Entry);
             Logger.LogInfo("[SFM-ACCEPT] load: " + PluginName + " " + PluginVersion + " ready (bar " + BarController.WidthNow.ToString("0.0") +
                            " cm, + / - from " + MinWidthCm.Value.ToString("0") + " to " + BarController.WidestCm().ToString("0.0") + " cm)");
         }
