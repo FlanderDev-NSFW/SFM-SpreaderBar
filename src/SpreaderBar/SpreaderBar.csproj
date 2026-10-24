@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$(RepoRoot)build\SfmMod.props" />
+
+  <PropertyGroup>
+    <AssemblyName>SpreaderBar</AssemblyName>
+    <RootNamespace>SpreaderBar</RootNamespace>
+    <Version>0.6.0</Version>
+    <Description>SpreaderBar - leg spreader bar for SecretFlasherManaka (BepInEx IL2CPP)</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="UnityEngine.UI"><HintPath>$(SfmInterop)\UnityEngine.UI.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.UIModule"><HintPath>$(SfmInterop)\UnityEngine.UIModule.dll</HintPath><Private>false</Private></Reference>
+    <!-- The model, exported from the .blend by tools/export_model.py (see README). -->
+    <EmbeddedResource Include="assets\spreaderbar.sbm" LogicalName="SpreaderBar.assets.spreaderbar.sbm" />
+  </ItemGroup>
+
+  <Import Project="$(RepoRoot)build\SfmKit.props" />
+  <Import Project="$(RepoRoot)build\SfmMod.targets" />
+</Project>

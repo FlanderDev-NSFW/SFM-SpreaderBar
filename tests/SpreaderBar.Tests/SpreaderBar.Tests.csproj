@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Runs without the game: compiles only the Unity-free logic of the mod (+ the pure part of SfmKit). -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RollForward>Major</RollForward>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <RootNamespace>SpreaderBar.Tests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\mods\SpreaderBar\Logic\**\*.cs" Link="Logic\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\SfmKit\Pure\**\*.cs" Link="SfmKit.Pure\%(RecursiveDir)%(Filename)%(Extension)" />
+    <!-- The exported model (tests are skipped when it has not been exported yet). -->
+    <None Include="..\..\mods\SpreaderBar\assets\spreaderbar.sbm" Link="spreaderbar.sbm" CopyToOutputDirectory="PreserveNewest"
+          Condition="Exists('..\..\mods\SpreaderBar\assets\spreaderbar.sbm')" />
+  </ItemGroup>
+</Project>
