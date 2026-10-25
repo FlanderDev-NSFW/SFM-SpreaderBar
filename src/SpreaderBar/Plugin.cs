@@ -22,7 +22,7 @@ namespace SpreaderBar
     {
         public const string PluginGuid = "com.local.spreaderbar";
         public const string PluginName = "SpreaderBar";
-        public const string PluginVersion = "0.8.0";
+        public const string PluginVersion = "0.8.1";
         private const string ModelResource = "SpreaderBar.assets.spreaderbar.sbm";
 
         internal static ManualLogSource Logger;

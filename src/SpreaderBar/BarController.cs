@@ -525,11 +525,11 @@ namespace SpreaderBar
 
         // The leg's outline: the player's skinned meshes near the ankles are baked (the game's meshes are not CPU-readable,
         // so their bind pose cannot be used) and cut with the cuff plane. Experiments [observed 2026-10-12]: baked in
-        // LateUpdate before the leg changes with BakeMesh(mesh, true) and pos + rot * v the outline is a clean ring of the
-        // right size (without useScale it came out ~30 % too big; baked in Camera.onPreCull it did not match the bones at
-        // all). Its position is not reliable though - the game moves the legs again after LateUpdate and the skin near the
-        // ankle partly follows the foot (one outline sat 4 cm off its leg) - so only its size and shape are kept, and the
-        // cuff stays centred on the shin bone, which matches the drawn leg.
+        // LateUpdate before the leg changes with BakeMesh(mesh, true) the outline is a clean ring (baked in Camera.onPreCull
+        // it did not match the bones at all). The bake still needs the renderer's lossy scale - pos + rot * (scale x v) - as
+        // her body object sits under Manustia, scaled by her height (1.3125 on the first save); without it the outline came
+        // out ~24 % small and pulled towards her feet [observed 2026-10-25, Binders]. Only its size and shape are kept - the
+        // game moves the legs again after LateUpdate - and the cuff stays centred on the shin bone, which matches the drawn leg.
         private Mesh _bakeMesh;
 
         [HideFromIl2Cpp]
@@ -558,10 +558,10 @@ namespace SpreaderBar
                 r.BakeMesh(_bakeMesh, true);
                 var verts = _bakeMesh.vertices;
                 Transform t = r.transform;
-                Vector3 pos = t.position;
+                Vector3 pos = t.position, scale = t.lossyScale;
                 Quaternion rot = t.rotation;
                 var world = new NVector3[verts.Length];
-                for (int i = 0; i < verts.Length; i++) world[i] = N(pos + rot * verts[i]);
+                for (int i = 0; i < verts.Length; i++) world[i] = N(pos + rot * Vector3.Scale(scale, verts[i]));
                 var triArray = _bakeMesh.triangles;
                 var tris = new int[triArray.Length];
                 for (int i = 0; i < tris.Length; i++) tris[i] = triArray[i];

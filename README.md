@@ -57,7 +57,7 @@ the motion and checks it reproduces the rig. In game:
 - each cuff sits square to its shin (`CuffHeight` above the ankle joint) and turns on its eye; the bar runs straight eye to eye;
 - the meshes use a copy of the game's handcuff material (UnityChan toon shader), tinted with the rig's colours;
 - **each cuff is sized to its leg** (`FitCuffs`): every 2 s the player's skinned meshes near the ankles (body, socks, shoes ...) are
-  baked and cut with the cuff plane (three cuts over the ring's height); the outline's half-widths along the bar and across it give
+  baked (with their objects' scale - her body is scaled by her height) and cut with the cuff plane (three cuts over the ring's height); the outline's half-widths along the bar and across it give
   a per-axis cuff scale (an oval leg gets an oval cuff, up to `MaxOval`) plus `ClearanceCm`. The cuff stays centred on the shin bone;
   the largest outline since the bar was put on is kept (a pose can make the measurement smaller, never the leg). The bar keeps
   `Scale`; its eyes follow the cuffs.
@@ -130,6 +130,11 @@ the motion and checks it reproduces the rig. In game:
   MCommon's walk / crouch / gaman speeds read 1.1 / 0.6 / 0.63 and the pose's FloatParam 0.45. (Measured with the first defaults
   0.85 / 0.5; reversed to 0.35 / 0.6 the same day on the player's request: 21.1 cm x0.35 -> 0.252 m/s, 91.9 cm x0.6 -> 0.429,
   unlocked 0.715.)
+
+- L3 0.8.1 (2026-10-25, first save, body object scaled 1.3125): the bake now includes the renderer's lossy scale. Fitted
+  half-widths R 2.3 x 2.8 / L 2.6 x 2.4 cm before -> R 2.6 x 3.4 / L 3.1 x 2.7 cm (cuff scale 0.80 / 0.96 -> 0.90 / 1.13);
+  crawling 2.7 x 3.3. Screenshots from behind: the fitted cuff closes around the ankle with a small gap; shrunk towards the old
+  size (`ClearanceCm` -0.3, control) it presses into the back of the heel.
 
 ## Known limits
 
