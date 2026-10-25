@@ -89,10 +89,8 @@ namespace SpreaderBar
         internal bool InteractHeld; // F as the game sees it this frame (after the hub; OnInput)
 
         private BarRig _rig;
-        private IntPtr _gameData;
         private float _nextPoseTry;
         private bool _tunedFromGame, _releasePose;
-        private Transform _uiLayer;
         private static int _failures;
         private int _refusals;
         private bool _poseRequested;
@@ -155,7 +153,6 @@ namespace SpreaderBar
         private void Tick()
         {
             WatchWidthKeys();
-            TrackSaveIdentity();
             var player = PlayerController.Instance;
             if (player == null || GameState.GameStateData == null) return;
             if (!_tunedFromGame) TuneFromGame();
@@ -241,18 +238,13 @@ namespace SpreaderBar
         internal void OnSaveLoaded(bool locked, float chance)
         {
             Machine.Restore(locked, chance);
-            _gameData = GameState.GameStateData == null ? IntPtr.Zero : GameState.GameStateData.Pointer;
             _nextPoseTry = Time.time + 1f; // the stage is still loading; the pose is refused until the player is live
         }
 
-        /// <summary>A new game or the title screen replaces the game data without a load: drop the bar.</summary>
+        /// <summary>A new game or the title screen replaces the game data without a load (RestraintHub's OnNewGame): drop the bar.</summary>
         [HideFromIl2Cpp]
-        private void TrackSaveIdentity()
+        internal void OnNewGame()
         {
-            var data = GameState.GameStateData;
-            IntPtr ptr = data == null ? IntPtr.Zero : data.Pointer;
-            if (ptr == _gameData) return;
-            _gameData = ptr;
             if (Machine.Worn) Plugin.Logger.LogInfo("game data replaced without a load: spreader bar reset");
             Machine.Reset();
         }
@@ -357,7 +349,7 @@ namespace SpreaderBar
                 : r.JustSwitchVibrator || r.JustSwitchPistonMachine || r.JustTimeStop ? "switch"
                 // The handcuff struggle (hold F) is not allowed in the pose (CanUnlock false); with the bar and the cuffs on,
                 // F goes to the cuffs first.
-                : r.Interact && GameStateFacade.IsAttachSomeHandcuffs() && !InInteractArea() ? "handcuff struggle"
+                : r.Interact && GameStateFacade.IsAttachSomeHandcuffs() && !RestraintHub.Hub.InInteractArea ? "handcuff struggle"
                 : null;
             if (why == null || pca.PlayerAction == null) return;
             pca.PlayerAction.ChangeAction(ActionType.None);
@@ -373,7 +365,7 @@ namespace SpreaderBar
             if (action.Type == ActionType.GanimataWalk) { _poseRequested = false; _idleSince = -1f; return; }
             // Other actions and poses (pee, items, the handcuff struggle, events) play out; the pose returns afterwards.
             bool cuffed = GameStateFacade.IsAttachSomeHandcuffs();
-            if (action.Type != ActionType.None || UiOpen() || RingOpen() || pca.PlayerState.IsCrouch || (cuffed && InteractHeld))
+            if (action.Type != ActionType.None || RestraintHub.Hub.MenuOpen || pca.PlayerState.IsCrouch || (cuffed && InteractHeld))
             {
                 _idleSince = -1f;
                 return;
@@ -656,44 +648,6 @@ namespace SpreaderBar
         }
 
         // --- helpers -----------------------------------------------------------------------------------------------------
-
-        private Il2CppArrayBase<InteractAreaController> _areas;
-        private float _areasTime = -10f;
-
-        /// <summary>The player stands in an interaction area. InteractManager.CurrentInteractModel stayed null although the
-        /// closet prompt was shown, so the areas' own flag is used [observed 2026-10-11].</summary>
-        [HideFromIl2Cpp]
-        private bool InInteractArea()
-        {
-            if (_areas == null || Time.time - _areasTime > 2f) // areas come and go with stages and NPCs
-            {
-                _areas = UnityEngine.Object.FindObjectsOfType<InteractAreaController>();
-                _areasTime = Time.time;
-            }
-            foreach (var area in _areas)
-                if (area != null && area.isInArea && area.gameObject.activeInHierarchy) return true;
-            return false;
-        }
-
-        [HideFromIl2Cpp]
-        private bool UiOpen()
-        {
-            if (_uiLayer == null)
-            {
-                var go = GameObject.Find("/InGameManager/InGameCanvas/MiddleCloneLayer");
-                if (go == null) return false;
-                _uiLayer = go.transform;
-            }
-            for (int i = 0; i < _uiLayer.childCount; i++)
-                if (_uiLayer.GetChild(i).gameObject.activeSelf) return true;
-            return false;
-        }
-
-        private static bool RingOpen()
-        {
-            var view = RingMenuParentView.Instance;
-            return view != null && view.IsOpenRing;
-        }
 
         private static void PlaySe(InGameSoundManager.SeType type)
         {

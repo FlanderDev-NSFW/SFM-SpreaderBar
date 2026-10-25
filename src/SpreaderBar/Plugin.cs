@@ -17,12 +17,12 @@ namespace SpreaderBar
     public enum BarMode { LegsApart, SpreadLegWalk }
 
     [BepInPlugin(PluginGuid, PluginName, PluginVersion)]
-    [BepInDependency(Hub.Guid, BepInDependency.DependencyFlags.HardDependency)]
+    [BepInDependency(Hub.Guid, "0.3.0")] // OnSave / OnLoad / OnNewGame
     public sealed class Plugin : BasePlugin
     {
         public const string PluginGuid = "com.local.spreaderbar";
         public const string PluginName = "SpreaderBar";
-        public const string PluginVersion = "0.8.1";
+        public const string PluginVersion = "0.8.2";
         private const string ModelResource = "SpreaderBar.assets.spreaderbar.sbm";
 
         internal static ManualLogSource Logger;
@@ -37,7 +37,7 @@ namespace SpreaderBar
         public override void Load()
         {
             Logger = Log;
-            DebugDisable = Config.Bind("Debug", "Disable", 0, "Diagnostics: switch parts off to find a conflict. Bitmask: 1 input hook, 4 label hook, 8 unlock gauge hook, 16 load hook, 32 save hook, 128 the whole controller, 256 leg spreading (live), 512 slower walking (live).");
+            DebugDisable = Config.Bind("Debug", "Disable", 0, "Diagnostics: switch parts off to find a conflict. Bitmask: 128 the whole controller, 256 leg spreading (live), 512 slower walking (live). (1, 4, 8: hooks now in RestraintHub; 16, 32: save and load go through RestraintHub since 0.8.2.)");
             RingLabel = Config.Bind("General", "RingLabel", "Spreader Bar", "Name of the ring menu entry.");
             Mode = Config.Bind("General", "Mode", BarMode.LegsApart,
                 "LegsApart: the bar only holds the ankles apart, on top of any animation or pose. " +
@@ -89,7 +89,6 @@ namespace SpreaderBar
                 return;
             }
 
-            Patches.Apply(new HarmonyLib.Harmony(PluginGuid));
             ClassInjector.RegisterTypeInIl2Cpp<BarController>();
             if ((DebugDisable.Value & 128) == 0) AddComponent<BarController>();
             Entry = new Restraint
@@ -98,6 +97,9 @@ namespace SpreaderBar
                 RingValue = BarController.RingItemValue,
                 Label = () => RingLabel.Value,
                 ShortcutSaveKey = Patches.SaveKeyShortcuts,
+                OnSave = Patches.Save,
+                OnLoad = Patches.Load,
+                OnNewGame = () => BarController.Instance?.OnNewGame(),
                 OnShortcutsMissing = Patches.RepairShortcuts,
                 Holds = BodyParts.Legs,
                 IsWorn = () => BarController.Instance != null && BarController.Instance.Machine.Worn,
