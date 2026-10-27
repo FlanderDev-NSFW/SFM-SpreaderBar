@@ -1,0 +1,21 @@
+<Project>
+  <!--
+    Shared by every SFM mod repository (kept in sync from sfm-modkit/templates/ModRepo - change it there).
+    GameDir (the game copy to compile against) comes from, first match wins:
+      1. -p:GameDir=...                          (CI: the private reference package, see build/ci.py)
+      2. Directory.Build.local.props here        (git-ignored; copy Directory.Build.local.props.example)
+      3. Directory.Build.local.props further up  (the repo checked out inside sfm-modkit as mods/<Mod>)
+  -->
+  <PropertyGroup>
+    <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
+    <SfmLocalProps Condition="Exists('$(RepoRoot)Directory.Build.local.props')">$(RepoRoot)Directory.Build.local.props</SfmLocalProps>
+    <SfmLocalProps Condition="'$(SfmLocalProps)' == ''">$([MSBuild]::GetPathOfFileAbove('Directory.Build.local.props', '$([System.IO.Path]::GetDirectoryName($(RepoRoot.TrimEnd('\'))))'))</SfmLocalProps>
+  </PropertyGroup>
+  <Import Project="$(SfmLocalProps)" Condition="'$(SfmLocalProps)' != '' And Exists('$(SfmLocalProps)')" />
+
+  <PropertyGroup>
+    <SfmInterop>$(GameDir)\BepInEx\interop</SfmInterop>
+    <SfmBepCore>$(GameDir)\BepInEx\core</SfmBepCore>
+    <SfmGameDotnet>$(GameDir)\dotnet</SfmGameDotnet>
+  </PropertyGroup>
+</Project>

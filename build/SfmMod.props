@@ -1,0 +1,55 @@
+<Project>
+  <!--
+    (Kept in sync from sfm-modkit/templates/ModRepo.) Imported at the TOP of every mod .csproj:
+        <Import Project="$(RepoRoot)build\SfmMod.props" />
+    Mirrors the proven CollarAsset build: net6.0 (BepInEx 6 IL2CPP ships .NET 6.0.7), compile against
+    the game's own dotnet\ folder, BepInEx\core and the generated BepInEx\interop assemblies.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <NoStdLib>true</NoStdLib>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <DebugType>portable</DebugType>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <!-- net6.0 is out of support in current SDKs; the game runtime forces it, so silence that warning. -->
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+    <NoWarn>$(NoWarn);NETSDK1138</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Runtime BCL as shipped with the game's BepInEx (.NET 6.0.7) -->
+    <Reference Include="$(SfmGameDotnet)\System*.dll"><Private>false</Private></Reference>
+    <Reference Include="$(SfmGameDotnet)\netstandard.dll"><Private>false</Private></Reference>
+    <Reference Include="$(SfmGameDotnet)\mscorlib.dll"><Private>false</Private></Reference>
+
+    <!-- BepInEx 6 (IL2CPP) core -->
+    <Reference Include="BepInEx.Core"><HintPath>$(SfmBepCore)\BepInEx.Core.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="0Harmony"><HintPath>$(SfmBepCore)\0Harmony.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="MonoMod.RuntimeDetour"><HintPath>$(SfmBepCore)\MonoMod.RuntimeDetour.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="SemanticVersioning"><HintPath>$(SfmBepCore)\SemanticVersioning.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="BepInEx.Unity.IL2CPP"><HintPath>$(SfmBepCore)\BepInEx.Unity.IL2CPP.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Il2CppInterop.Runtime"><HintPath>$(SfmBepCore)\Il2CppInterop.Runtime.dll</HintPath><Private>false</Private></Reference>
+
+    <!-- Generated interop assemblies (the game's API surface). Curated, known-good set. -->
+    <Reference Include="Il2Cppmscorlib"><HintPath>$(SfmInterop)\Il2Cppmscorlib.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Assembly-CSharp"><HintPath>$(SfmInterop)\Assembly-CSharp.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Unity.InputSystem"><HintPath>$(SfmInterop)\Unity.InputSystem.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.CoreModule"><HintPath>$(SfmInterop)\UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.PhysicsModule"><HintPath>$(SfmInterop)\UnityEngine.PhysicsModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.AnimationModule"><HintPath>$(SfmInterop)\UnityEngine.AnimationModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.AssetBundleModule"><HintPath>$(SfmInterop)\UnityEngine.AssetBundleModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.AudioModule"><HintPath>$(SfmInterop)\UnityEngine.AudioModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.InputLegacyModule"><HintPath>$(SfmInterop)\UnityEngine.InputLegacyModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.IMGUIModule"><HintPath>$(SfmInterop)\UnityEngine.IMGUIModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.TextRenderingModule"><HintPath>$(SfmInterop)\UnityEngine.TextRenderingModule.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+  <!--
+    Need another module (UI, TextMeshPro, Rendering ...)? Add to YOUR mod's csproj, e.g.:
+      <Reference Include="UnityEngine.UI"><HintPath>$(SfmInterop)\UnityEngine.UI.dll</HintPath><Private>false</Private></Reference>
+    Find the right assembly with:  ./tools/dev.ps1 ref find <TypeName>
+  -->
+</Project>

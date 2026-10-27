@@ -1,0 +1,10 @@
+<Project>
+  <!--
+    (Kept in sync from sfm-modkit/templates/ModRepo.) Compiles this repository's copy of the shared SfmKit library
+    (lib/SfmKit, refreshed from the SfmKit repository by sfm-modkit's `sync-repo`) into the mod: one DLL, no extra
+    plugin for players, nothing to fetch at build time. RULE: SfmKit never contains Il2Cpp-injected (ClassInjector) types.
+  -->
+  <ItemGroup>
+    <Compile Include="$(RepoRoot)lib\SfmKit\**\*.cs" Link="SfmKit\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

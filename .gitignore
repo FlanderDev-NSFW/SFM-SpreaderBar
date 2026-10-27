@@ -1,0 +1,20 @@
+# Build output
+**/bin/
+**/obj/
+/dist/
+*.user
+.vs/
+
+# Local machine state
+Directory.Build.local.props
+
+# Downloaded by build/ci.py (never commit: the game references are private, the hub is its own repository)
+/.gamerefs/
+/lib/RestraintHub/
+
+# Safety net: game / loader binaries must never land in git
+GameAssembly.dll
+UnityPlayer.dll
+global-metadata.dat
+**/interop/
+**/BepInEx/core/

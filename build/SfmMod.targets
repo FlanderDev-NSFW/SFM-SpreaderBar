@@ -1,0 +1,35 @@
+<Project>
+  <!-- (Kept in sync from sfm-modkit/templates/ModRepo.) Imported at the BOTTOM of every mod .csproj. -->
+
+  <!--
+    RestraintHub: a mod that sets <SfmUsesRestraintHub>true</SfmUsesRestraintHub> compiles against
+      1. the hub's project next to this repository (..\RestraintHub, as in sfm-modkit/mods), else
+      2. lib\RestraintHub\RestraintHub.dll (CI downloads the hub's latest release there), else
+      3. the hub installed in the game (GameDir\BepInEx\plugins\RestraintHub).
+    It is never copied into this mod's output: players install it separately.
+  -->
+  <PropertyGroup Condition="'$(SfmUsesRestraintHub)' == 'true'">
+    <SfmHubProject>$([System.IO.Path]::GetFullPath('$(RepoRoot)..\RestraintHub\src\RestraintHub\RestraintHub.csproj'))</SfmHubProject>
+    <SfmHubDll Condition="'$(SfmHubDll)' == '' And Exists('$(RepoRoot)lib\RestraintHub\RestraintHub.dll')">$(RepoRoot)lib\RestraintHub\RestraintHub.dll</SfmHubDll>
+    <SfmHubDll Condition="'$(SfmHubDll)' == ''">$(GameDir)\BepInEx\plugins\RestraintHub\RestraintHub.dll</SfmHubDll>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(SfmUsesRestraintHub)' == 'true' And Exists('$(SfmHubProject)')">
+    <ProjectReference Include="$(SfmHubProject)" Private="false" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(SfmUsesRestraintHub)' == 'true' And !Exists('$(SfmHubProject)')">
+    <Reference Include="RestraintHub"><HintPath>$(SfmHubDll)</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+
+  <!-- Fails early with an actionable message. -->
+  <Target Name="SfmGuardGameDir" BeforeTargets="ResolveAssemblyReferences;CoreCompile"
+          Condition="'$(SfmSkipGuard)' != 'true'">
+    <Error Condition="'$(GameDir)' == ''"
+           Text="GameDir is not set. Copy Directory.Build.local.props.example to Directory.Build.local.props and point it at your game copy (or pass -p:GameDir=...)." />
+    <Error Condition="'$(GameDir)' != '' And !Exists('$(GameDir)\BepInEx\core\BepInEx.Unity.IL2CPP.dll')"
+           Text="BepInEx 6 IL2CPP not found in '$(GameDir)\BepInEx\core'. Is GameDir the game root (the folder with the .exe and GameAssembly.dll)?" />
+    <Error Condition="'$(GameDir)' != '' And !Exists('$(GameDir)\BepInEx\interop\Assembly-CSharp.dll')"
+           Text="Interop assemblies are missing in '$(GameDir)\BepInEx\interop'. BepInEx generates them on the first game launch." />
+    <Error Condition="'$(SfmUsesRestraintHub)' == 'true' And !Exists('$(SfmHubProject)') And !Exists('$(SfmHubDll)')"
+           Text="RestraintHub not found: put RestraintHub.dll in lib\RestraintHub\ or install RestraintHub in the game ($(SfmHubDll))." />
+  </Target>
+</Project>

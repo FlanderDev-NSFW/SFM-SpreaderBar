@@ -40,3 +40,11 @@ ankles.
 - The cuffs are fitted barefoot; with boots or socks they may sit less well.
 
 Single-player / offline only. Code: MIT licence (`LICENSE.txt`). Model: "Rigged Spreader bar" by CableNSFW, updated by Crute, CC BY-ND 4.0 (smutba.se; details in `LICENSE-MODELS.txt`).
+
+## Building from source
+- .NET SDK 8, and a copy of the game with BepInEx 6 IL2CPP started once: copy `Directory.Build.local.props.example` to
+  `Directory.Build.local.props` and set `GameDir`. Then `dotnet build src/SpreaderBar/SpreaderBar.csproj -c Release`.
+- It compiles against RestraintHub: the [SFM-RestraintHub](https://github.com/FlanderDev-NSFW/SFM-RestraintHub) repository next to this one, `lib/RestraintHub/RestraintHub.dll`, or the hub installed in the game.
+- The source of the mod is `src/SpreaderBar` and its tests (`tests/`); `lib/SfmKit` is a copy of the shared [SfmKit](https://github.com/FlanderDev-NSFW/SfmKit)
+  library; `docs/` holds the developer notes.
+- Every push to `main` builds, tests and releases it (`.github/workflows/release.yml`, `build/ci.py`).

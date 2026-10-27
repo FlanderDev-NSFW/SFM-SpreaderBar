@@ -23,8 +23,7 @@ SOFTWARE.
 ---
 
 This licence covers the code. It does not cover:
-- the 3D models and textures (the files in mods/*/assets/, also embedded in the
-  mods' DLLs): see LICENSE-MODELS;
-- third_party/, which keeps its own licence (third_party/CollarAsset/LICENSE.txt);
+- the 3D models and textures (src/SpreaderBar/assets/, also embedded in the
+  DLL): see LICENSE-MODELS;
 - anything from the game itself, which is never part of this repository or its
   packages.

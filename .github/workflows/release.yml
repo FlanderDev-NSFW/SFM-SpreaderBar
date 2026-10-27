@@ -1,0 +1,50 @@
+# Kept in sync from sfm-modkit/templates/ModRepo. Every push to main: test, build, package and release the mod.
+# The first build of a <Version> is the release v<Version>; later builds of the same version are the pre-release
+# v<Version>-build.<run> (only the newest is kept). Bump <Version> in src/<Mod>/<Mod>.csproj for a new release.
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SFM_RELEASE: ${{ vars.SFM_RELEASE || 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Game references (private)
+        env:
+          SFM_GAMEREFS_TOKEN: ${{ secrets.SFM_GAMEREFS_TOKEN }}
+        run: python build/ci.py gamerefs
+      - name: RestraintHub
+        run: python build/ci.py deps
+      - name: Test
+        run: python build/ci.py test
+      - name: Build
+        run: python build/ci.py build
+      - name: Package
+        run: python build/ci.py package
+      - name: Release
+        if: env.SFM_RELEASE == 'true'
+        run: python build/ci.py release
+      - name: Zip as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: package
+          path: dist/*.zip

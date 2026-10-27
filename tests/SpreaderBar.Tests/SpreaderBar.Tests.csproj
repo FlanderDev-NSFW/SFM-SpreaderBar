@@ -9,10 +9,10 @@
     <RootNamespace>SpreaderBar.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\..\mods\SpreaderBar\Logic\**\*.cs" Link="Logic\%(RecursiveDir)%(Filename)%(Extension)" />
-    <Compile Include="..\..\src\SfmKit\Pure\**\*.cs" Link="SfmKit.Pure\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\SpreaderBar\Logic\**\*.cs" Link="Logic\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\..\lib\SfmKit\Pure\**\*.cs" Link="SfmKit.Pure\%(RecursiveDir)%(Filename)%(Extension)" />
     <!-- The exported model (tests are skipped when it has not been exported yet). -->
-    <None Include="..\..\mods\SpreaderBar\assets\spreaderbar.sbm" Link="spreaderbar.sbm" CopyToOutputDirectory="PreserveNewest"
-          Condition="Exists('..\..\mods\SpreaderBar\assets\spreaderbar.sbm')" />
+    <None Include="..\..\src\SpreaderBar\assets\spreaderbar.sbm" Link="spreaderbar.sbm" CopyToOutputDirectory="PreserveNewest"
+          Condition="Exists('..\..\src\SpreaderBar\assets\spreaderbar.sbm')" />
   </ItemGroup>
 </Project>

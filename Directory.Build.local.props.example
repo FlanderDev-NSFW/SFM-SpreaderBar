@@ -1,0 +1,9 @@
+<!--
+  Copy to Directory.Build.local.props (git-ignored) and point GameDir at a copy of SecretFlasherManaka
+  with BepInEx 6 IL2CPP installed and started once (so BepInEx/interop exists). Use a dev copy, not the one you play.
+-->
+<Project>
+  <PropertyGroup>
+    <GameDir>D:\Games\SecretFlasherManaka</GameDir>
+  </PropertyGroup>
+</Project>
