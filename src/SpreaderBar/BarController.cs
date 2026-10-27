@@ -21,7 +21,7 @@ namespace SpreaderBar
     /// <summary>
     /// Drives the bar each frame: lock state, forced spread-leg walk, model placement. The ring entry, number shortcuts,
     /// F / + / - routing and the unlock gauge are RestraintHub's (Plugin.Entry).
-    /// Game facts used here are in docs/knowledge/api-notes (player-and-movement, ui-and-input) and mods/SpreaderBar/README.md.
+    /// Game facts used here are in docs/knowledge/api-notes (player-and-movement, ui-and-input) and docs/mods/SpreaderBar.md.
     /// </summary>
     public sealed class BarController : MonoBehaviour
     {

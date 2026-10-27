@@ -17,12 +17,12 @@ namespace SpreaderBar
     public enum BarMode { LegsApart, SpreadLegWalk }
 
     [BepInPlugin(PluginGuid, PluginName, PluginVersion)]
-    [BepInDependency(Hub.Guid, "0.3.0")] // OnSave / OnLoad / OnNewGame
+    [BepInDependency(Hub.Guid, "1.0.0")] // OnSave / OnLoad / OnNewGame
     public sealed class Plugin : BasePlugin
     {
-        public const string PluginGuid = "com.local.spreaderbar";
+        public const string PluginGuid = "FlanderDev.SFM.SpreaderBar";
         public const string PluginName = "SpreaderBar";
-        public const string PluginVersion = "0.8.2";
+        public const string PluginVersion = "1.0.0";
         private const string ModelResource = "SpreaderBar.assets.spreaderbar.sbm";
 
         internal static ManualLogSource Logger;
