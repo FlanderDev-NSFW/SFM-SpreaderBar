@@ -78,7 +78,7 @@ the motion and checks it reproduces the rig. In game:
 | Unlock.AttemptSeconds | 4.5 | seconds per unlock attempt (applies live) |
 | Unlock.SuccessChance | 1 | chance per full attempt (1 = first try; applies live) |
 | Model.Scale | 0.75 | bar size (and cuff size when FitCuffs is off: hole ~2.5 cm radius) |
-| Model.FitCuffs | true | size each cuff to the leg it closes around |
+| Model.FitCuffs | false | size each cuff to the leg it closes around (off by default since 2026-10-31: the user's setting) |
 | Model.ClearanceCm | 0.4 | gap between the leg and the cuff's inner ring |
 | Model.MaxOval | 1.3 | how oval a fitted cuff may get (1 = always round) |
 | Bar.WidthCm | 25 | distance between the cuff centres (+ / - in game, saved here; applies live) |

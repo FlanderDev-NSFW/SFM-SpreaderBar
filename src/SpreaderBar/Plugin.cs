@@ -68,7 +68,7 @@ namespace SpreaderBar
             SpeedAtMaxWidth = Config.Bind("Walk", "SpeedAtMaxWidth", 0.6f,
                 new ConfigDescription("The same factor at the widest width (MaxWidthCm, or the model's limit); linear in between. " +
                                       "Both 1 = no slowdown.", new AcceptableValueRange<float>(0.05f, 1f)));
-            FitCuffs = Config.Bind("Model", "FitCuffs", true,
+            FitCuffs = Config.Bind("Model", "FitCuffs", false,
                 "Size each cuff to the leg it closes around (measured from the body, socks and shoes every 2 s). Off: cuffs use Scale.");
             ClearanceCm = Config.Bind("Model", "ClearanceCm", 0.4f,
                 new ConfigDescription("Gap between the leg and the cuff's inner ring when FitCuffs is on.", new AcceptableValueRange<float>(0f, 3f)));
