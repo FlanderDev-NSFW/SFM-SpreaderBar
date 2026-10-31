@@ -3,6 +3,8 @@
 A spreader bar for **Secret Flasher Manaka**: cuffs on both ankles hold her legs apart at the bar's width, whatever she does.
 Like the game's handcuffs, but for the legs.
 
+Model: ["Rigged Spreader bar"](https://smutba.se/project/1144cf06-d54c-41d5-ae4f-3b27ced5ac6c/) by CableNSFW, updated by Crute ([CC BY-ND 4.0](https://creativecommons.org/licenses/by-nd/4.0/)).
+
 ## Requirements
 - Secret Flasher Manaka (tested with v1.1.3)
 - BepInEx 6 for IL2CPP (tested with build 738)
@@ -39,7 +41,7 @@ fixed size; `Model.FitCuffs = true` sizes them to her ankles instead.
 - At normal walking speed the feet slide a little (the walk animation's steps are longer than the bar allows).
 - Fitted cuffs (`Model.FitCuffs`) are measured barefoot; with boots or socks they may sit less well.
 
-Single-player / offline only. Code: MIT licence (`LICENSE.txt`). Model: "Rigged Spreader bar" by CableNSFW, updated by Crute, CC BY-ND 4.0 (smutba.se; details in `LICENSE-MODELS.txt`).
+Single-player / offline only. Code: MIT licence (`LICENSE.txt`). Model: ["Rigged Spreader bar"](https://smutba.se/project/1144cf06-d54c-41d5-ae4f-3b27ced5ac6c/) by CableNSFW, updated by Crute, CC BY-ND 4.0 (smutba.se; details in `LICENSE-MODELS.txt`).
 
 ## Building from source
 - .NET SDK 8, and a copy of the game with BepInEx 6 IL2CPP started once: copy `Directory.Build.local.props.example` to
