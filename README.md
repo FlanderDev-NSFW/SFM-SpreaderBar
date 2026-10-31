@@ -20,8 +20,8 @@ worn list (`B` selects):
 | `+` / `-` | wider / narrower (1 cm per press, hold to repeat) |
 | hold `F` | struggle free |
 
-She can still walk, crouch and crawl, but not run. The narrower the bar, the slower she walks. The cuffs are sized to her
-ankles.
+She can still walk, crouch and crawl, but not run. The narrower the bar, the slower she walks. The cuffs have a
+fixed size; `Model.FitCuffs = true` sizes them to her ankles instead.
 
 ## Settings
 `BepInEx/config/FlanderDev.SFM.SpreaderBar.cfg` (created on the first start). Most useful:
@@ -37,7 +37,7 @@ ankles.
 ## Good to know
 - Whether the bar is on is saved with the game; the width is a setting, the same in every save.
 - At normal walking speed the feet slide a little (the walk animation's steps are longer than the bar allows).
-- The cuffs are fitted barefoot; with boots or socks they may sit less well.
+- Fitted cuffs (`Model.FitCuffs`) are measured barefoot; with boots or socks they may sit less well.
 
 Single-player / offline only. Code: MIT licence (`LICENSE.txt`). Model: "Rigged Spreader bar" by CableNSFW, updated by Crute, CC BY-ND 4.0 (smutba.se; details in `LICENSE-MODELS.txt`).
 
