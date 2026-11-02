@@ -220,7 +220,11 @@ namespace SpreaderBar
 
         /// <summary>The ring entry or a number key, when the bar is off and nothing worn holds her legs (the hub checked).</summary>
         [HideFromIl2Cpp]
-        internal void OnRingChosen()
+        internal void OnRingChosen() => PutOn();
+
+        /// <summary>Put the bar on (the ring entry, or a mission through RestraintHub): null when it is closing, else why not.</summary>
+        [HideFromIl2Cpp]
+        internal string PutOn()
         {
             if (Machine.RequestLock())
             {
@@ -230,8 +234,30 @@ namespace SpreaderBar
                 PlaySe(InGameSoundManager.SeType.CommonEquip);
                 _nextPoseTry = Time.time + 0.3f; // the ring is still closing: an immediate pose change is refused
                 Plugin.Logger.LogInfo("[SFM-ACCEPT] ring: spreader bar chosen, closing");
+                return null;
             }
-            else Plugin.Logger.LogInfo("ring: spreader bar already worn (hold the interact key to try to unlock)");
+            Plugin.Logger.LogInfo("ring: spreader bar already worn (hold the interact key to try to unlock)");
+            return "the spreader bar is already on";
+        }
+
+        /// <summary>Take the bar off at once (a mission, its timer or the escape key, through RestraintHub); a mission's width
+        /// goes back to the player's.</summary>
+        [HideFromIl2Cpp]
+        internal void TakeOff()
+        {
+            if (Machine.Worn) Plugin.Logger.LogInfo("[SFM-ACCEPT] release: spreader bar taken off");
+            Machine.Reset();
+            if (Math.Abs(WidthNow - _configWidth) > 1e-3f) ApplyWidth(_configWidth, false);
+        }
+
+        /// <summary>A mission's width (RestraintHub's setting "width", cm): fitted like + / -, not stored in the config.</summary>
+        [HideFromIl2Cpp]
+        internal string SetWidth(float cm)
+        {
+            if (!Machine.Worn) return "the spreader bar is not on";
+            ApplyWidth(cm, false);
+            Plugin.Logger.LogInfo("[SFM-ACCEPT] width: " + WidthNow.ToString("0.0") + " cm (mission)");
+            return null;
         }
 
         [HideFromIl2Cpp]

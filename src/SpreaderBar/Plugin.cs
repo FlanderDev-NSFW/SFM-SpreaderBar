@@ -17,12 +17,12 @@ namespace SpreaderBar
     public enum BarMode { LegsApart, SpreadLegWalk }
 
     [BepInPlugin(PluginGuid, PluginName, PluginVersion)]
-    [BepInDependency(Hub.Guid, "1.0.0")] // OnSave / OnLoad / OnNewGame
+    [BepInDependency(Hub.Guid, "^1.1.0")] // OnSave / OnLoad / OnNewGame; PutOn / TakeOff / Settings (missions)
     public sealed class Plugin : BasePlugin
     {
         public const string PluginGuid = "FlanderDev.SFM.SpreaderBar";
         public const string PluginName = "SpreaderBar";
-        public const string PluginVersion = "1.0.0";
+        public const string PluginVersion = "1.1.0";
         private const string ModelResource = "SpreaderBar.assets.spreaderbar.sbm";
 
         internal static ManualLogSource Logger;
@@ -106,6 +106,17 @@ namespace SpreaderBar
                 // No running; the rest (yielding the forced pose to actions, no running in it) is BarController.OnInput.
                 Blocks = () => RestraintHub.Blocks.Running,
                 OnChosen = () => { var c = BarController.Instance; if (c != null) c.OnRingChosen(); },
+                PutOn = () => BarController.Instance == null ? "not ready" : BarController.Instance.PutOn(),
+                TakeOff = () => BarController.Instance?.TakeOff(),
+                Settings = new[]
+                {
+                    new RestraintSetting
+                    {
+                        Name = "width", Unit = "cm",
+                        Get = () => BarController.WidthNow,
+                        Set = v => BarController.Instance == null ? "not ready" : BarController.Instance.SetWidth(v),
+                    },
+                },
                 Attempt = () => BarController.Instance == null ? 0f : BarController.Instance.Machine.Attempt,
                 OnInput = i => { var c = BarController.Instance; if (c != null) c.OnInput(i); },
                 Controls = "+/- width",

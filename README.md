@@ -1,4 +1,4 @@
-# SpreaderBar 1.0.0
+# SpreaderBar 1.1.0
 
 A spreader bar for **Secret Flasher Manaka**: cuffs on both ankles hold her legs apart at the bar's width, whatever she does.
 Like the game's handcuffs, but for the legs.
@@ -8,7 +8,7 @@ Model: ["Rigged Spreader bar"](https://smutba.se/project/1144cf06-d54c-41d5-ae4f
 ## Requirements
 - Secret Flasher Manaka (tested with v1.1.3)
 - BepInEx 6 for IL2CPP (tested with build 738)
-- **RestraintHub 1.0.0** or newer
+- **RestraintHub 1.1.0** or newer
 
 ## Install
 Extract the zip into the game folder (the folder with `SecretFlasherManaka.exe`). You get `BepInEx/plugins/SpreaderBar/`.
@@ -24,6 +24,8 @@ worn list (`B` selects):
 
 She can still walk, crouch and crawl, but not run. The narrower the bar, the slower she walks. The cuffs have a
 fixed size; `Model.FitCuffs = true` sizes them to her ankles instead.
+
+Missions (Custom Missions v2) can put it on and lock it through RestraintHub: `RtHub_Apply("SpreaderBar")`, setting `width` (cm) - see [Missions.md](https://github.com/FlanderDev-NSFW/SFM-RestraintHub/blob/main/docs/Missions.md).
 
 ## Settings
 `BepInEx/config/FlanderDev.SFM.SpreaderBar.cfg` (created on the first start). Most useful:

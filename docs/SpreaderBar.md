@@ -142,6 +142,7 @@ the motion and checks it reproduces the rig. In game:
   half-widths R 2.3 x 2.8 / L 2.6 x 2.4 cm before -> R 2.6 x 3.4 / L 3.1 x 2.7 cm (cuff scale 0.80 / 0.96 -> 0.90 / 1.13);
   crawling 2.7 x 3.3. Screenshots from behind: the fitted cuff closes around the ankle with a small gap; shrunk towards the old
   size (`ClearanceCm` -0.3, control) it presses into the back of the heel.
+- L3 1.1.0 (2026-11-02, with RestraintHub 1.1.0 and the test missions - details in RestraintHub's `docs/RestraintHub.md`, L3 1.1.0): `PutOn` / `TakeOff` for missions and the escape key; a player's bar taken over by a mission; setting `width` 40 cm from a mission, not stored in the config, back to the player's width when the bar came off; the lock saved and loaded.
 
 ## Known limits
 
