@@ -28,9 +28,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
-      - name: Game references (private)
-        env:
-          SFM_GAMEREFS_TOKEN: ${{ secrets.SFM_GAMEREFS_TOKEN }}
+      - name: Game references
         run: python build/ci.py gamerefs
       - name: RestraintHub
         run: python build/ci.py deps

@@ -1,13 +1,13 @@
 """Build, test, package and release an SFM mod repository (kept in sync from sfm-modkit/templates/ModRepo).
 
-    python build/ci.py gamerefs   private reference assemblies -> .gamerefs/gamedir (needs SFM_GAMEREFS_TOKEN)
+    python build/ci.py gamerefs   reference-only game assemblies (public SFM-GameRefs release) -> .gamerefs/gamedir
     python build/ci.py deps       RestraintHub's latest release -> lib/RestraintHub (only if the mod uses the hub)
     python build/ci.py test       run every tests/*/ project (plain console runners, exit code 1 on a failure)
     python build/ci.py build      dotnet build src/<Mod> in Release (against .gamerefs when present)
     python build/ci.py package    dist/<Mod>-<version>.zip: BepInEx/plugins/<Mod>/..., unpacked in the game folder
     python build/ci.py release    GitHub release: v<version> the first time, else pre-release v<version>-build.<run>
 
-Runs locally too (gamerefs / deps / release need the gh CLI). Standard library only.
+Runs locally too (deps / release need the gh CLI). Standard library only.
 """
 import glob
 import json
@@ -16,6 +16,7 @@ import re
 import shutil
 import subprocess
 import sys
+import urllib.request
 import zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -75,17 +76,17 @@ def extract(zip_path, prefix, dest):
 
 
 def cmd_gamerefs():
-    """The private reference-only assemblies (no game code) the mod compiles against in CI."""
+    """The reference-only assemblies (method bodies stripped, no game code) the mod compiles against in CI: a public release
+    of SFM-GameRefs, downloaded without a token."""
     dest = os.path.join(ROOT, ".gamerefs")
     shutil.rmtree(dest, ignore_errors=True)
-    env = dict(os.environ)
-    token = env.get("SFM_GAMEREFS_TOKEN")
-    if token:
-        env["GH_TOKEN"] = token
-    elif os.environ.get("GITHUB_ACTIONS"):
-        sys.exit("SFM_GAMEREFS_TOKEN is not set: add the repository secret (read access to %s)." % GAMEREFS_REPO)
-    run(["gh", "release", "download", GAMEREFS_TAG, "--repo", GAMEREFS_REPO, "--pattern", "*.nupkg", "--dir", dest], env=env)
-    nupkg = glob.glob(os.path.join(dest, "*.nupkg"))[0]
+    os.makedirs(dest)
+    name = "SFM.GameRefs.%s.nupkg" % GAMEREFS_TAG.lstrip("v")
+    url = "https://github.com/%s/releases/download/%s/%s" % (GAMEREFS_REPO, GAMEREFS_TAG, name)
+    nupkg = os.path.join(dest, name)
+    print("download " + url)
+    with urllib.request.urlopen(url) as src, open(nupkg, "wb") as dst:
+        shutil.copyfileobj(src, dst)
     extract(nupkg, "gamedir", os.path.join(dest, "gamedir"))
     os.remove(nupkg)
     print("game references in " + os.path.join(dest, "gamedir"))
