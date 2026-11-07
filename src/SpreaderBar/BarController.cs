@@ -19,14 +19,13 @@ using SfmKit.Pure;
 namespace SpreaderBar
 {
     /// <summary>
-    /// Drives the bar each frame: lock state, forced spread-leg walk, model placement. The ring entry, number shortcuts,
+    /// Drives the bar each frame: lock state, forced spread-leg walk, model placement. The panel row,
     /// F / + / - routing and the unlock gauge are RestraintHub's (Plugin.Entry).
     /// Game facts used here are in docs/knowledge/api-notes (player-and-movement, ui-and-input) and docs/mods/SpreaderBar.md.
     /// </summary>
     public sealed class BarController : MonoBehaviour
     {
         /// <summary>RingItemType value of our entry (the game uses 1..14 for items and 10000+ for poses).</summary>
-        public const int RingItemValue = 9100;
 
         internal static BarController Instance;
         internal static BarModel Model;
@@ -218,11 +217,8 @@ namespace SpreaderBar
             }
         }
 
-        /// <summary>The ring entry or a number key, when the bar is off and nothing worn holds her legs (the hub checked).</summary>
-        [HideFromIl2Cpp]
-        internal void OnRingChosen() => PutOn();
 
-        /// <summary>Put the bar on (the ring entry, or a mission through RestraintHub): null when it is closing, else why not.</summary>
+        /// <summary>Put the bar on (the hub's panel, or a mission): null when it is closing, else why not.</summary>
         [HideFromIl2Cpp]
         internal string PutOn()
         {

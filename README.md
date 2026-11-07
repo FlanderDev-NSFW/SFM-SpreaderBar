@@ -1,4 +1,4 @@
-# SpreaderBar 1.1.0
+# SpreaderBar 2.0.0
 
 A spreader bar for **Secret Flasher Manaka**: cuffs on both ankles hold her legs apart at the bar's width, whatever she does.
 Like the game's handcuffs, but for the legs.
@@ -8,13 +8,13 @@ Model: ["Rigged Spreader bar"](https://smutba.se/project/1144cf06-d54c-41d5-ae4f
 ## Requirements
 - Secret Flasher Manaka (tested with v1.1.3)
 - BepInEx 6 for IL2CPP (tested with build 738)
-- **RestraintHub 1.1.0** or newer
+- **RestraintHub 2.0.0** or newer (2.x)
 
 ## Install
 Extract the zip into the game folder (the folder with `SecretFlasherManaka.exe`). You get `BepInEx/plugins/SpreaderBar/`.
 
 ## How to use
-Hold a ring key (e.g. `1`), page with `Z` / `X` to the restraint page and click **Spreader Bar**. With it selected in the
+Open the restraint panel with `U` and click **Spreader Bar** (in Wearables). With it selected in the
 worn list (`B` selects):
 
 | Key | Does |

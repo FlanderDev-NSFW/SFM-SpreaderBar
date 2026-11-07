@@ -11,23 +11,23 @@ using SpreaderBar.Logic;
 namespace SpreaderBar
 {
     /// <summary>
-    /// Spreader bar: a leg restraint in the ring menu (always owned). Locked, it holds the ankles apart (or, in SpreadLegWalk
+    /// Spreader bar: a leg restraint in the hub's panel (always owned). Locked, it holds the ankles apart (or, in SpreadLegWalk
     /// mode, the player in the spread-leg walk) until it is unlocked by holding the interact key (one try by default).
     /// </summary>
     public enum BarMode { LegsApart, SpreadLegWalk }
 
     [BepInPlugin(PluginGuid, PluginName, PluginVersion)]
-    [BepInDependency(Hub.Guid, "^1.1.0")] // OnSave / OnLoad / OnNewGame; PutOn / TakeOff / Settings (missions)
+    [BepInDependency(Hub.Guid, "^2.0.0")] // RestraintHub 2: the panel (U), PutOn / TakeOff, mission settings
     public sealed class Plugin : BasePlugin
     {
         public const string PluginGuid = "FlanderDev.SFM.SpreaderBar";
         public const string PluginName = "SpreaderBar";
-        public const string PluginVersion = "1.1.0";
+        public const string PluginVersion = "2.0.0";
         private const string ModelResource = "SpreaderBar.assets.spreaderbar.sbm";
 
         internal static ManualLogSource Logger;
-        /// <summary>The bar's registration with RestraintHub (ring entry, selection, F and + / -).</summary>
-        internal static Restraint Entry;
+        /// <summary>The bar's registration with RestraintHub (panel row, selection, F and + / -).</summary>
+        internal static Wearable Entry;
         public static ConfigEntry<string> RingLabel;
         public static ConfigEntry<BarMode> Mode;
         public static ConfigEntry<bool> FitCuffs;
@@ -38,7 +38,7 @@ namespace SpreaderBar
         {
             Logger = Log;
             DebugDisable = Config.Bind("Debug", "Disable", 0, "Diagnostics: switch parts off to find a conflict. Bitmask: 128 the whole controller, 256 leg spreading (live), 512 slower walking (live). (1, 4, 8: hooks now in RestraintHub; 16, 32: save and load go through RestraintHub since 0.8.2.)");
-            RingLabel = Config.Bind("General", "RingLabel", "Spreader Bar", "Name of the ring menu entry.");
+            RingLabel = Config.Bind("General", "RingLabel", "Spreader Bar", "Name in the restraint panel.");
             Mode = Config.Bind("General", "Mode", BarMode.LegsApart,
                 "LegsApart: the bar only holds the ankles apart, on top of any animation or pose. " +
                 "SpreadLegWalk: the player is also held in the Spread-Leg Walk pose (other actions still work, the pose returns after).");
@@ -91,21 +91,17 @@ namespace SpreaderBar
 
             ClassInjector.RegisterTypeInIl2Cpp<BarController>();
             if ((DebugDisable.Value & 128) == 0) AddComponent<BarController>();
-            Entry = new Restraint
+            Entry = new Wearable
             {
                 Id = "SpreaderBar",
-                RingValue = BarController.RingItemValue,
                 Label = () => RingLabel.Value,
-                ShortcutSaveKey = Patches.SaveKeyShortcuts,
                 OnSave = Patches.Save,
                 OnLoad = Patches.Load,
                 OnNewGame = () => BarController.Instance?.OnNewGame(),
-                OnShortcutsMissing = Patches.RepairShortcuts,
                 Holds = BodyParts.Legs,
                 IsWorn = () => BarController.Instance != null && BarController.Instance.Machine.Worn,
                 // No running; the rest (yielding the forced pose to actions, no running in it) is BarController.OnInput.
                 Blocks = () => RestraintHub.Blocks.Running,
-                OnChosen = () => { var c = BarController.Instance; if (c != null) c.OnRingChosen(); },
                 PutOn = () => BarController.Instance == null ? "not ready" : BarController.Instance.PutOn(),
                 TakeOff = () => BarController.Instance?.TakeOff(),
                 Settings = new[]

@@ -8,14 +8,12 @@
 > config file is `BepInEx/config/FlanderDev.SFM.SpreaderBar.cfg`. The release zips no longer include RestraintHub (it is its own download).
 
 A leg spreader bar for SecretFlasherManaka, used like the game's normal handcuffs but for the legs. **Needs RestraintHub**
-(1.0.0+, a separate download): the ring entry, number shortcuts, the list of worn restraints with the selected one, F and + / -
-routing and the conflicts with other restraints are the hub's (`docs/mods/RestraintHub.md`).
+(2.0.0+, a separate download): the panel row, the list of worn restraints with the selected one, F and + / - routing and the
+conflicts with other restraints are the hub's (RestraintHub's `docs/RestraintHub.md`).
 
-- **Ring menu** (hold 1): entry **"Spreader Bar"**, always owned, on the restraint page after the game's (page 5 with Z/X). Click it
-  to lock the bar; choosing it again while it is on selects it in the hub's list. Refused while another restraint holds her legs
-  (the wall restraint).
-- **Number shortcut:** like any ring entry, release a ring key (1-8) over it to put it on that key (shown bottom right); a short tap of
-  the key then locks the bar. Kept in the save and across map changes.
+- **The hub's panel** (`U`, Wearables): **"Spreader Bar"** locks the bar; choosing it again while it is on selects it in the hub's
+  list. Refused while another restraint holds her legs (the wall restraint, the binders). (Up to 1.x: a ring entry and number
+  shortcuts; a 0.1.0 save's shortcut repair still runs from the bar's own load hook.)
 - **Locked (`Mode` LegsApart, default):** the cuffs close around the ankles and the bar holds them **exactly its width apart** on top
   of whatever the player does - standing, walking, crawling, any pose or action; nothing is blocked except running and auto-run.
   Closed, crossing or wider legs all end at the bar width. The bar keeps the animation's direction up to `StrideAngle` (30 deg) away
@@ -73,7 +71,7 @@ the motion and checks it reproduces the rig. In game:
 
 | Key | Default | Meaning |
 |---|---|---|
-| General.RingLabel | Spreader Bar | ring menu text |
+| General.RingLabel | Spreader Bar | panel / list text (the key name is kept from 1.x) |
 | General.Mode | LegsApart | `LegsApart`: legs held apart on top of any pose; `SpreadLegWalk`: also force the spread-leg walk |
 | Unlock.AttemptSeconds | 4.5 | seconds per unlock attempt (applies live) |
 | Unlock.SuccessChance | 1 | chance per full attempt (1 = first try; applies live) |
@@ -143,6 +141,7 @@ the motion and checks it reproduces the rig. In game:
   crawling 2.7 x 3.3. Screenshots from behind: the fitted cuff closes around the ankle with a small gap; shrunk towards the old
   size (`ClearanceCm` -0.3, control) it presses into the back of the heel.
 - L3 1.1.0 (2026-11-02, with RestraintHub 1.1.0 and the test missions - details in RestraintHub's `docs/RestraintHub.md`, L3 1.1.0): `PutOn` / `TakeOff` for missions and the escape key; a player's bar taken over by a mission; setting `width` 40 cm from a mission, not stored in the config, back to the player's width when the bar came off; the lock saved and loaded.
+- L3 2.0.0 (2026-11-07, RestraintHub 2.0.0): ported to the hub's 2.0 API (`Wearable`; no ring entry, number keys or shortcut save key; the hub shows `PutOn`'s reason). In game: listed in the panel (`U`), put on from it ("put on: SpreaderBar"), worn with the yoke, saved and loaded locked; the 0.1.0 save repair now runs from its own load hook.
 
 ## Known limits
 

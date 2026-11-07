@@ -15,7 +15,7 @@ namespace SpreaderBar
         public const string SaveKeyShortcuts = "SpreaderBar.Shortcuts"; // written by the hub (kept from 0.6.0)
 
         // --- save / load: two extra keys in the game's own save file ------------------------------------------------------
-        // Called by RestraintHub (Restraint.OnSave / OnLoad) right after the game wrote / read a save slot (never the system file).
+        // Called by RestraintHub (HubItem.OnSave / OnLoad) right after the game wrote / read a save slot (never the system file).
 
         internal static void Save(SaveSlot slot)
         {
@@ -37,6 +37,7 @@ namespace SpreaderBar
             {
                 var c = BarController.Instance;
                 if (c == null) return;
+                if (slot.Load(SaveKeyShortcuts, -1) < 0) RepairShortcuts(); // a 0.1.0 save (before the hub kept the keys)
                 bool locked = slot.Load(SaveKeyLocked, false);
                 double chance = slot.Load(SaveKeyChance, -1.0);
                 c.OnSaveLoaded(locked, (float)Math.Max(chance, 0.0));
@@ -47,7 +48,7 @@ namespace SpreaderBar
 
         /// <summary>A save written by 0.1.0 (it has our chance key but no shortcut key) may hold the bar's ring index as a
         /// shortcut, which makes the game's ring setup throw and the stage never start. Point those keys at entry 0 again
-        /// (before the stage starts) and give them back to the bar. The hub calls this when the save has no shortcut key.</summary>
+        /// (before the stage starts) and give them back to the bar. Called from Load when the save has no shortcut key.</summary>
         internal static int RepairShortcuts()
         {
             if (SaveRapper.Load(SaveKeyChance, -1.0) < 0) return 0; // not a SpreaderBar save at all
