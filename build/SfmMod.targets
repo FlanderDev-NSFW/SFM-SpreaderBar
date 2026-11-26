@@ -3,13 +3,16 @@
 
   <!--
     RestraintHub: a mod that sets <SfmUsesRestraintHub>true</SfmUsesRestraintHub> compiles against
+      0. FMF's RestraintHub API next to this repository (..\FMF\src\RestraintHub, as in sfm-modkit/mods: FMF replaces
+         the hub and ships its 2.x API as the RestraintHub plugin), else
       1. the hub's project next to this repository (..\RestraintHub, as in sfm-modkit/mods), else
       2. lib\RestraintHub\RestraintHub.dll (CI downloads the hub's latest release there), else
       3. the hub installed in the game (GameDir\BepInEx\plugins\RestraintHub).
     It is never copied into this mod's output: players install it separately.
   -->
   <PropertyGroup Condition="'$(SfmUsesRestraintHub)' == 'true'">
-    <SfmHubProject>$([System.IO.Path]::GetFullPath('$(RepoRoot)..\RestraintHub\src\RestraintHub\RestraintHub.csproj'))</SfmHubProject>
+    <SfmHubProject>$([System.IO.Path]::GetFullPath('$(RepoRoot)..\FMF\src\RestraintHub\RestraintHub.csproj'))</SfmHubProject>
+    <SfmHubProject Condition="!Exists('$(SfmHubProject)')">$([System.IO.Path]::GetFullPath('$(RepoRoot)..\RestraintHub\src\RestraintHub\RestraintHub.csproj'))</SfmHubProject>
     <SfmHubDll Condition="'$(SfmHubDll)' == '' And Exists('$(RepoRoot)lib\RestraintHub\RestraintHub.dll')">$(RepoRoot)lib\RestraintHub\RestraintHub.dll</SfmHubDll>
     <SfmHubDll Condition="'$(SfmHubDll)' == ''">$(GameDir)\BepInEx\plugins\RestraintHub\RestraintHub.dll</SfmHubDll>
   </PropertyGroup>
